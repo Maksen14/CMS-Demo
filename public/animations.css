@@ -1,0 +1,193 @@
+/* Animation Styles */
+
+/* Base class for fade-in animations */
+.fade-in {
+  opacity: 0 !important;
+  transform: translateY(20px) !important;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out !important;
+}
+
+/* Applied when element is visible */
+.fade-in.show {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Special handling for black background sections */
+.quote-section.bg-black {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  background-color: #000 !important;
+}
+
+.quote-section.bg-black.fade-in,
+.quote-section.bg-black.fade-in.show {
+  opacity: 1 !important;
+  transform: none !important;
+  background-color: #000 !important;
+}
+
+/* Special handling for hero sections with background images */
+.hero-section,
+section[class*="bg-cover"],
+section[style*="background-image"],
+section[style*="background-image: url"] {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  background-attachment: fixed !important;
+}
+
+/* Special handling for À PROPOS DE NOUS section */
+section h1:contains("À PROPOS DE NOUS"),
+section:has(h1:contains("À PROPOS DE NOUS")) {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  background-attachment: fixed !important;
+}
+
+/* Ensure background images remain fixed */
+.bg-fixed,
+[style*="background-image"] {
+  background-attachment: fixed !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.hero-section.fade-in,
+.hero-section.fade-in.show,
+section[class*="bg-cover"].fade-in,
+section[class*="bg-cover"].fade-in.show,
+section[style*="background-image"].fade-in,
+section[style*="background-image"].fade-in.show {
+  opacity: 1 !important;
+  transform: none !important;
+  background-attachment: fixed !important;
+}
+
+/* Only animate content inside hero sections, not the background */
+.hero-section .hero-text,
+.hero-section .container,
+.hero-section .mx-auto {
+  /* These can be animated */
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out !important;
+}
+
+/* Staggered animation delay classes */
+.delay-100 {
+  transition-delay: 0.1s !important;
+}
+
+.delay-200 {
+  transition-delay: 0.2s !important;
+}
+
+.delay-300 {
+  transition-delay: 0.3s !important;
+}
+
+.delay-400 {
+  transition-delay: 0.4s !important;
+}
+
+.delay-500 {
+  transition-delay: 0.5s !important;
+}
+
+/* Different animation variants */
+.fade-in-left {
+  opacity: 0 !important;
+  transform: translateX(-20px) !important;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out !important;
+}
+
+.fade-in-left.show {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+.fade-in-right {
+  opacity: 0 !important;
+  transform: translateX(20px) !important;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out !important;
+}
+
+.fade-in-right.show {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+.fade-in-up {
+  opacity: 0 !important;
+  transform: translateY(20px) !important;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out !important;
+}
+
+.fade-in-up.show {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.fade-in-down {
+  opacity: 0 !important;
+  transform: translateY(-20px) !important;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out !important;
+}
+
+.fade-in-down.show {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.zoom-in {
+  opacity: 0 !important;
+  transform: scale(0.95) !important;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out !important;
+}
+
+.zoom-in.show {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+}
+
+/* Ensure sections with background images remain fixed during animations */
+section[style*="background-image"], .bg-cover, section.hero-section {
+  background-attachment: fixed !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+section[style*="background-image"] > *, .bg-cover > *, section.hero-section > * {
+  opacity: 0;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* À PROPOS DE NOUS section specific styling */
+section:has(h1:contains("PROPOS")), 
+section:has(h1:contains("À PROPOS")) {
+  background-attachment: fixed !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Special handling for fixed black backgrounds in quote sections */
+.quote-section.bg-black {
+  background-color: black !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Ensure images in sections with background images don't animate */
+section[style*="background-image"] img, 
+.bg-cover img, 
+section.hero-section img,
+section:has(h1:contains("PROPOS")) img {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+} 

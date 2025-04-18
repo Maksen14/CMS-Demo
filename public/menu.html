@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>La Bella Cucina - Menu</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="preload" href="against.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hammersmith+One&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+  <style>
+    /* Menu page specific styles */
+    body {
+      background-color: #F9FAFB; /* bg-gray-50 */
+    }
+    
+    .menu-navbar {
+      background-color: transparent;
+      transition: all 0.3s ease;
+      box-shadow: none;
+    }
+    
+    .menu-navbar.navbar-scrolled {
+      background-color: #111827;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .menu-item {
+      background-color: white;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      border-left: 4px solid transparent;
+    }
+    
+    .menu-item:hover {
+      transform: translateY(-5px);
+      border-left: 4px solid #FCD34D; /* bg-yellow-300 */
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .menu-tab {
+      padding: 0.75rem 1.5rem;
+      font-weight: 500;
+      background-color: transparent;
+      color: #4B5563; /* text-gray-600 */
+      border-radius: 0.5rem 0.5rem 0 0;
+      position: relative;
+      transition: all 0.3s ease;
+      margin: 0 0.25rem;
+    }
+    
+    .menu-tab:hover {
+      color: #1F2937; /* bg-gray-900 */
+      background-color: rgba(252, 211, 77, 0.2); /* bg-yellow-300 with opacity */
+    }
+    
+    .menu-tab.active-tab {
+      background-color: #FCD34D; /* bg-yellow-300 */
+      color: #1F2937; /* bg-gray-900 */
+      font-weight: 600;
+    }
+    
+    .dietary-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      margin-right: 0.5rem;
+      margin-top: 0.5rem;
+      background-color: #F9FAFB; /* bg-gray-50 */
+      border: 1px solid #E5E7EB;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .menu-section {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    .intro-container {
+      margin-top: -4rem;
+      z-index: 10;
+      position: relative;
+    }
+    
+    /* Notification styles */
+    #notification {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    #notification.translate-y-20 {
+      transform: translateY(5rem);
+      opacity: 0;
+    }
+    
+    /* Basic Mobile Menu - Simple and reliable */
+    .mobile-menu {
+      display: none;
+      background-color: #1F2937;
+      padding: 1rem;
+    }
+    
+    .mobile-menu a {
+      display: block;
+      padding: 0.75rem 1rem;
+      color: white;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .mobile-menu a:last-child {
+      border-bottom: none;
+    }
+    
+    .mobile-menu a:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .mobile-menu a.active {
+      border-left: 3px solid #FCD34D;
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Show mobile menu when it has 'show' class */
+    .mobile-menu.show {
+      display: block;
+    }
+    
+    /* Hide auth links by default until auth status is determined */
+    .mobile-menu .admin-link,
+    .mobile-menu #mobile-logout-link {
+      display: none;
+    }
+    
+    /* Image Gallery Styles */
+    .gallery-container {
+      margin-top: 3rem;
+      margin-bottom: 4rem;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 2rem;
+    }
+    
+    .gallery-title {
+      font-family: 'Hammersmith One', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 1.5rem;
+      color: #4b5563;
+    }
+    
+    .gallery-image-container {
+      overflow: hidden;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      height: 250px;
+      position: relative;
+    }
+    
+    .gallery-image-container::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 70%, rgba(0,0,0,0.5) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .gallery-image-container:hover::after {
+      opacity: 1;
+    }
+    
+    .gallery-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+    
+    .gallery-image-container:hover .gallery-image {
+      transform: scale(1.05);
+    }
+    
+    /* Editable content styling */
+    [contenteditable="true"] {
+      outline: 2px dashed #FCD34D;
+      padding: 0.25rem;
+      position: relative;
+    }
+    
+    [contenteditable="true"]::before {
+      content: "Edit me";
+      position: absolute;
+      top: -1.5rem;
+      left: 0;
+      background-color: #FCD34D;
+      color: #1F2937;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-weight: bold;
+      opacity: 0.8;
+    }
+    
+    [contenteditable="true"]:focus {
+      outline: 2px solid #FCD34D;
+      box-shadow: 0 0 0 4px rgba(252, 211, 77, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="fixed w-full z-50 menu-navbar">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <!-- Logo -->
+        <a href="index.html" class="text-2xl font-bold text-white hover:text-yellow-300 transition-colors" id="site-title">
+          <i class="fas fa-utensils mr-2"></i>La Bella Cucina
+        </a>
+        
+        <!-- Mobile menu button -->
+        <div class="md:hidden">
+          <button id="mobileMenuBtn" class="text-white hover:text-yellow-300 focus:outline-none">
+            <i class="fas fa-bars text-2xl"></i>
+          </button>
+        </div>
+        
+        <!-- Desktop menu -->
+        <div class="hidden md:flex items-center space-x-6">
+          <a href="index.html" class="px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors">Home</a>
+          <a href="menu.html" class="px-3 py-2 text-white hover:text-yellow-300 transition-colors border-b-2 border-yellow-300">Menu</a>
+          <a href="contact.html" class="px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors">Reservations</a>
+          <a href="about.html" class="px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors">About</a>
+          <a href="reservations-admin.html" class="admin-link px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors" style="display: none;">
+            <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
+          </a>
+          <a href="/logout" id="logout-link" class="px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors hidden">
+            <i class="fas fa-sign-out-alt mr-1"></i>Logout
+          </a>
+        </div>
+        </div>
+      </div>
+      
+    <!-- Simple Mobile Menu (Initially Hidden) -->
+    <div id="mobileMenu" class="mobile-menu">
+      <a href="index.html">Home</a>
+      <a href="menu.html" class="active">Menu</a>
+      <a href="contact.html">Reservations</a>
+      <a href="about.html">About</a>
+      <a href="reservations-admin.html" class="admin-link">
+        <i class="fas fa-calendar-check mr-2"></i>Manage Reservations
+      </a>
+      <a href="/logout" id="mobile-logout-link">
+        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="relative h-96 bg-gray-900">
+    <div class="absolute inset-0 bg-gradient-to-r from-red-600/70 to-red-800/70 z-10"></div>
+    <div class="absolute inset-0 z-20" style="background-color: rgba(0, 0, 0, 0.6);"></div>
+    <img id="hero-image" alt="Menu background" class="absolute inset-0 w-full h-full object-cover" src="images/1744187687576-434321896.webp">
+    <div class="relative z-30 h-full flex items-center justify-center text-center px-4">
+      <div class="flex flex-col items-center justify-center w-full">
+        <h1 class="text-5xl md:text-7xl font-normal text-white mb-6 leading-tight" style="font-family: 'Against', sans-serif; letter-spacing: 4px; text-transform: uppercase;">Our Menu</h1>
+        <p class="text-xl md:text-2xl text-white mb-8" style="font-family: 'Hammersmith One', sans-serif; letter-spacing: 2px; text-transform: uppercase; font-weight: 400; text-shadow: 1px 1px 3px rgba(0,0,0,0.3);">Authentic Italian Flavors</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="pb-32 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4">
+      <!-- Menu Content -->
+      <div id="content" contenteditable="false" class="mb-20">
+        <!-- Menu content loaded from data.json -->
+      </div>
+    </div>
+    
+    <!-- Admin Controls -->
+    <section class="admin-controls" style="position: fixed !important; bottom: 20px; right: 20px; z-index: 9999 !important;">
+      <div class="flex flex-wrap gap-3 md:gap-4">
+        <button id="add-dish-button" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+          <i class="fas fa-plus mr-2"></i>Add Dish
+        </button>
+        <button id="manage-dishes-button" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+          <i class="fas fa-utensils mr-2"></i>Manage Dishes
+        </button>
+        <button id="manage-categories-button" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+          <i class="fas fa-layer-group mr-2"></i>Manage Categories
+        </button>
+        <button id="edit-toggle" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+          <i class="fas fa-edit mr-2"></i>Edit Content
+        </button>
+        <button id="save-content" style="display:none;" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+          <i class="fas fa-save mr-2"></i>Save
+        </button>
+        <input type="file" id="menu-image-input" accept="image/*" style="display:none;">
+      </div>
+    </section>
+  </main>
+
+  <!-- Connection between main content and footer -->
+  <div class="bg-gray-50 h-32"></div>
+
+  <!-- Add Dish Modal -->
+  <div id="add-dish-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-gray-900 bg-opacity-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-screen overflow-y-auto">
+      <div class="flex justify-between items-center px-6 py-4 border-b">
+        <h3 class="text-xl font-semibold text-gray-900">Add New Dish</h3>
+        <button class="close-modal text-gray-400 hover:text-gray-500 focus:outline-none">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form id="add-dish-form" class="p-6">
+        <div class="grid grid-cols-1 gap-6">
+          <div class="form-group">
+            <label class="block text-gray-700 mb-2" for="dish-name">Name</label>
+            <input type="text" id="dish-name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="block text-gray-700 mb-2" for="dish-price">Price (€)</label>
+            <input type="text" id="dish-price" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="block text-gray-700 mb-2" for="dish-description">Description</label>
+            <textarea id="dish-description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300" rows="3" required></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label class="block text-gray-700 mb-2" for="dish-category">Category</label>
+            <select id="dish-category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300" required></select>
+          </div>
+          
+          <div class="form-group">
+            <p class="block text-gray-700 mb-2">Dietary Options</p>
+            <div class="flex flex-wrap gap-4">
+              <label class="inline-flex items-center">
+                <input type="checkbox" class="form-checkbox text-yellow-500" value="vegetarian">
+                <span class="ml-2">Vegetarian</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" class="form-checkbox text-yellow-500" value="vegan">
+                <span class="ml-2">Vegan</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" class="form-checkbox text-yellow-500" value="gluten-free">
+                <span class="ml-2">Gluten-Free</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" class="form-checkbox text-yellow-500" value="spicy">
+                <span class="ml-2">Spicy</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" class="form-checkbox text-yellow-500" value="chefs-special">
+                <span class="ml-2">Chef's Special</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-end mt-6 gap-3">
+          <button type="button" class="close-modal px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none">
+            Add Dish
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manage Categories Modal -->
+  <div id="manage-categories-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 overflow-y-auto">
+    <div class="min-h-screen px-4 py-6 flex items-center justify-center">
+      <div class="bg-gray-50 rounded-lg w-full max-w-2xl p-6 shadow-xl">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">Manage Menu Categories</h2>
+          <button class="text-gray-500 hover:text-gray-700 p-2 close-modal">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="space-y-4">
+          <p class="text-gray-600">You can reorder categories by dragging, or add a new category.</p>
+          
+          <ul id="category-list" class="space-y-2">
+            <!-- Categories will be loaded dynamically -->
+          </ul>
+          
+          <div class="pt-4">
+            <div class="flex items-center">
+              <input type="text" id="new-category" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-yellow-300" placeholder="New category name">
+              <button id="add-category-btn" class="px-4 py-2 bg-yellow-300 text-gray-900 rounded-r-md hover:bg-yellow-400 transition-colors">Add</button>
+            </div>
+          </div>
+          
+          <div class="flex justify-end pt-4 border-t border-gray-200 mt-6">
+            <button type="button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md mr-3 close-modal">Cancel</button>
+            <button id="save-categories-btn" class="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Delete Modal -->
+  <div id="confirm-delete-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[60] overflow-y-auto">
+    <div class="min-h-screen px-4 py-6 flex items-center justify-center">
+      <div class="bg-gray-50 rounded-lg w-full max-w-md p-6 shadow-xl relative z-[61]">
+        <div class="text-center mb-6">
+          <i class="fas fa-exclamation-triangle text-5xl text-yellow-300 mb-4"></i>
+          <h2 class="text-2xl font-bold text-gray-900">Confirm Deletion</h2>
+          <p class="text-gray-600 mt-2">Are you sure you want to delete this item? This action cannot be undone.</p>
+        </div>
+        <div class="flex justify-center">
+          <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md mr-3 close-modal">Cancel</button>
+          <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Dishes Modal -->
+  <div id="manage-dishes-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 overflow-y-auto">
+    <div class="min-h-screen px-4 py-6 flex items-center justify-center">
+      <div class="bg-gray-50 rounded-lg w-full max-w-6xl p-6 shadow-xl">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">Manage Dishes</h2>
+          <button class="text-gray-500 hover:text-gray-700 p-2 close-modal">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="space-y-6">
+          <p class="text-gray-600">Drag dishes between categories to reorganize your menu. You can also edit or delete dishes.</p>
+          
+          <div class="flex space-x-4 mb-4 overflow-x-auto py-2" id="dish-tabs">
+            <!-- Category tabs will be dynamically added here -->
+          </div>
+          
+          <div class="border rounded-lg p-4 bg-white min-h-[400px] shadow-sm" id="dish-container">
+            <!-- Dishes for the selected category will be displayed here -->
+            <div class="flex justify-center items-center h-40 text-gray-400" id="dish-container-empty">
+              <p>Select a category to see dishes</p>
+            </div>
+          </div>
+          
+          <div class="flex justify-end pt-4 border-t border-gray-200 mt-6">
+            <button type="button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md mr-3 close-modal">Cancel</button>
+            <button id="save-dishes-btn" class="px-4 py-2 bg-yellow-300 text-gray-900 rounded-md hover:bg-yellow-400 transition-colors">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Dish Modal -->
+  <div id="edit-dish-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-gray-900 bg-opacity-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-screen overflow-y-auto">
+      <div class="flex justify-between items-center px-6 py-4 border-b">
+        <h3 class="text-xl font-semibold text-gray-900">Edit Dish</h3>
+        <button class="close-modal text-gray-400 hover:text-gray-500 focus:outline-none">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form id="edit-dish-form" class="p-6">
+        <input type="hidden" id="edit-dish-id">
+        
+        <div class="grid grid-cols-1 gap-6">
+          <div class="form-group">
+            <label class="block text-gray-700 mb-2" for="edit-dish-name">Name</label>
+            <input type="text" id="edit-dish-name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="block text-gray-700 mb-2" for="edit-dish-price">Price (€)</label>
+            <input type="text" id="edit-dish-price" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="block text-gray-700 mb-2" for="edit-dish-description">Description</label>
+            <textarea id="edit-dish-description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300" rows="3" required></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label class="block text-gray-700 mb-2" for="edit-dish-category">Category</label>
+            <select id="edit-dish-category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300" required></select>
+          </div>
+          
+          <div class="form-group">
+            <p class="block text-gray-700 mb-2">Dietary Options</p>
+            <div id="edit-dietary-options" class="flex flex-wrap gap-4">
+              <label class="inline-flex items-center">
+                <input type="checkbox" class="form-checkbox text-yellow-500" value="vegetarian">
+                <span class="ml-2">Vegetarian</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" class="form-checkbox text-yellow-500" value="vegan">
+                <span class="ml-2">Vegan</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" class="form-checkbox text-yellow-500" value="gluten-free">
+                <span class="ml-2">Gluten-Free</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" class="form-checkbox text-yellow-500" value="spicy">
+                <span class="ml-2">Spicy</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" class="form-checkbox text-yellow-500" value="chefs-special">
+                <span class="ml-2">Chef's Special</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-end mt-6 gap-3">
+          <button type="button" class="close-modal px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification element -->
+  <div id="notification" class="fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-20 opacity-0 z-50"></div>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-gray-300 py-12 mt-0">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center md:text-left">
+          <h3 class="text-xl font-bold text-white mb-4">La Bella Cucina</h3>
+          <p class="text-sm">Experience authentic Italian cuisine in a warm and welcoming atmosphere.</p>
+        </div>
+        <div class="text-center">
+          <h3 class="text-xl font-bold text-white mb-4">Quick Links</h3>
+          <ul class="space-y-2">
+            <li><a href="index.html" class="hover:text-white transition-colors">Home</a></li>
+            <li><a href="menu.html" class="hover:text-white transition-colors">Menu</a></li>
+            <li><a href="about.html" class="hover:text-white transition-colors">About</a></li>
+            <li><a href="contact.html" class="hover:text-white transition-colors">Reservations</a></li>
+            <li><a href="/login" id="footer-login-link" class="hover:text-white transition-colors">
+              <i class="fas fa-sign-in-alt mr-1"></i>Login
+            </a></li>
+            <li><a href="/logout" id="footer-logout-link" class="hover:text-white transition-colors hidden">
+              <i class="fas fa-sign-out-alt mr-1"></i>Logout
+            </a></li>
+          </ul>
+        </div>
+        <div class="text-center md:text-right">
+          <h3 class="text-xl font-bold text-white mb-4">Contact Us</h3>
+          <p class="text-sm">123 Main Street, Food City<br>Phone: +1 234 567 89</p>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-gray-800 text-center" id="footer-text"></div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    // Simple mobile menu functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      // Mobile menu toggle
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      const mobileMenu = document.getElementById('mobileMenu'); 
+      
+      if (mobileMenuBtn && mobileMenu) {
+        mobileMenuBtn.addEventListener('click', function() {
+          mobileMenu.classList.toggle('show');
+          
+          if (mobileMenu.classList.contains('show')) {
+            mobileMenuBtn.innerHTML = '<i class="fas fa-times text-2xl"></i>';
+          } else {
+            mobileMenuBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+          }
+        });
+        
+        // Close menu when clicking on links
+        const mobileLinks = mobileMenu.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+          link.addEventListener('click', function() {
+            mobileMenu.classList.remove('show');
+            mobileMenuBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+          });
+        });
+      }
+    });
+    
+    // Initialize page with auth check
+    document.addEventListener('DOMContentLoaded', function() {
+      // Navbar scrolling effect
+      window.addEventListener('scroll', function() {
+        const navbar = document.querySelector('.menu-navbar');
+        if (window.scrollY > 50) {
+          navbar.classList.add('navbar-scrolled');
+        } else {
+          navbar.classList.remove('navbar-scrolled');
+        }
+      });
+      
+      // Check if scroll position is already > 50 on load
+      if (window.scrollY > 50) {
+        document.querySelector('.menu-navbar').classList.add('navbar-scrolled');
+      }
+        
+      // Create or ensure placeholder image exists
+      ensurePlaceholderImage();
+      
+      // Check authentication status
+      checkAuth().then((isAuthenticated) => {
+        updateAuthUI();
+        fetchMenuData();
+        updateHeroImage();
+        
+        // Setup event listeners for admin controls if authenticated
+        if (isAuthenticated) {
+          console.log('User is authenticated, setting up admin controls');
+          setupEventListeners();
+          setupModals();
+          setupMenuEditing();
+        } else {
+          // Hide admin controls if not authenticated
+          document.querySelectorAll('.admin-controls').forEach(el => {
+            el.style.display = 'none';
+          });
+        }
+      });
+    });
+    
+    // Override the script.js menu loading functionality by defining these functions as no-ops
+    function initMenuPage() { 
+      console.log("Menu loading handled by menu.html directly");
+      return false; 
+    }
+    
+    function setupMenuTabs() { 
+      return false; 
+    }
+    
+    function setupDeleteDishButtons() { 
+      return false; 
+    }
+    
+    // Also override the loadContent function behavior for the menu page
+    const originalLoadContent = window.loadContent;
+    window.loadContent = async function() {
+      // If this is the menu page, prevent the default behavior
+      if (window.location.pathname.includes('menu')) {
+        console.log("Content loading for menu page is handled directly by menu.html");
+        
+        // Still need to update the auth UI and other non-content elements
+        const response = await fetch('/api/auth-status');
+        const data = await response.json();
+        if (typeof updateAuthUI === 'function') {
+          await updateAuthUI(data.authenticated);
+        }
+        
+        // Call our own fetchMenuData function
+        fetchMenuData();
+        return;
+      }
+      
+      // For other pages, call the original function
+      if (originalLoadContent) {
+        return originalLoadContent();
+      }
+    };
+    
+    // Override the updateAuthUI function to also handle the mobile menu authentication elements
+    const originalUpdateAuthUI = window.updateAuthUI;
+    window.updateAuthUI = function(isAuthenticated) {
+      // Call the original function
+      if (originalUpdateAuthUI) {
+        originalUpdateAuthUI(isAuthenticated);
+      }
+      
+      // Additionally, update mobile menu auth elements
+      const mobileLogoutLink = document.getElementById('mobile-logout-link');
+      const adminLinks = document.querySelectorAll('.admin-link');
+      
+      if (mobileLogoutLink) {
+        if (isAuthenticated) {
+          mobileLogoutLink.style.display = 'block';
+        } else {
+          mobileLogoutLink.style.display = 'none';
+        }
+      }
+      
+      adminLinks.forEach(link => {
+        if (isAuthenticated) {
+          link.style.display = 'block';
+        } else {
+          link.style.display = 'none';
+        }
+      });
+    };
+    
+    // Global variables
+    let menuData = null;
+    let currentDeleteId = null;
+    let currentCategory = null;
+    
+    // Utility functions
+    function $(selector) {
+      return document.querySelector(selector);
+    }
+    
+    function $$(selector) {
+      return document.querySelectorAll(selector);
+    }
+    
+    // Fetch menu data from API endpoint
+    function fetchMenuData() {
+      return fetch('/api/menu')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to fetch menu data');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Fix old image paths in the menu data
+          fixImagePaths(data);
+          
+          menuData = data;
+          renderMenuData(data);
+          populateCategorySelects(data.categories);
+          
+          // Update site title if available
+          const siteTitle = document.getElementById('site-title');
+          if (siteTitle && data.title) {
+            siteTitle.textContent = data.title;
+          }
+          
+          // Update document title
+          if (data.title) {
+            document.title = data.title;
+          }
+          
+          // Update footer text
+          const footerText = document.getElementById('footer-text');
+          if (footerText && data.footer) {
+            footerText.textContent = data.footer;
+          }
+          
+          return data;
+        })
+        .catch(error => {
+          console.error('Error loading menu data:', error);
+          const contentSection = document.getElementById('content');
+          contentSection.innerHTML = `
+            <div class="text-center py-12">
+              <h2 class="text-2xl font-semibold text-gray-800 mb-4">Error Loading Menu</h2>
+              <p class="text-red-600">There was a problem loading the menu data. Please try again later.</p>
+              <p class="text-gray-500 mt-2">${error.message}</p>
+            </div>
+          `;
+          showNotification('Error loading menu data: ' + error.message, 'error');
+          throw error;
+        });
+    }
+    
+    // Fix old image paths in the menu data
+    function fixImagePaths(data) {
+      // We've removed images from the menu, but keep the function to prevent errors
+      console.log('Image handling has been removed from the menu page');
+      return data;
+    }
+    
+    // Helper function to safely render text content
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.textContent;
+    }
+    
+    // Render menu data to the page
+    function renderMenuData(data) {
+      const contentSection = document.getElementById('content');
+      
+      // Render introduction
+      let introHtml = `
+        <section class="mb-8 p-6 bg-gray-50 rounded-lg shadow-sm">
+          <h2 class="text-3xl font-semibold text-gray-900 mb-4">${escapeHtml(data.introduction.title)}</h2>
+          <p class="text-gray-600 leading-relaxed mb-6">${escapeHtml(data.introduction.content)}</p>
+          
+          <div class="flex flex-wrap gap-3 mb-6">
+      `;
+      
+      // Render dietary badges
+      data.dietary.forEach(diet => {
+        introHtml += `
+          <div class="flex items-center px-3 py-1 bg-gray-200 rounded-full text-sm">
+            <i class="fas ${diet.icon} mr-2 text-yellow-500"></i>
+            <span>${escapeHtml(diet.name)}</span>
+          </div>
+        `;
+      });
+      
+      introHtml += `
+          </div>
+        </section>
+      `;
+      
+      // Render menu tabs
+      let tabsHtml = `
+        <div class="menu-tabs-container mb-8 bg-white rounded-lg p-2 shadow-sm">
+          <div class="flex space-x-2 overflow-x-auto pb-2">
+      `;
+      
+      data.categories.forEach((category, index) => {
+        tabsHtml += `
+          <button class="menu-tab px-4 py-2 rounded-md whitespace-nowrap ${index === 0 ? 'active' : ''}" 
+                  data-tab="${category.id}">
+            ${escapeHtml(category.name)}
+          </button>
+        `;
+      });
+      
+      tabsHtml += `
+          </div>
+        </div>
+      `;
+      
+      // Render menu sections
+      let sectionsHtml = '';
+      
+      data.categories.forEach((category, index) => {
+        sectionsHtml += `
+          <section id="menu-section-${category.id}" class="menu-section ${index === 0 ? 'active' : 'hidden'}">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-6">${escapeHtml(category.name)}</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        `;
+        
+        // Render dishes in this category
+        category.dishes.forEach(dish => {
+          sectionsHtml += `
+            <div class="menu-item p-4 bg-white rounded-lg shadow-sm transition-transform hover:shadow-md hover:-translate-y-1">
+              <div class="flex justify-between items-start mb-2">
+                <h4 class="text-xl font-medium text-gray-900">${escapeHtml(dish.name)}</h4>
+                <span class="text-lg font-bold text-yellow-600">€${escapeHtml(dish.price.toString())}</span>
+              </div>
+              <p class="text-gray-600 mb-3">${escapeHtml(dish.description)}</p>
+              
+              ${dish.dietary && dish.dietary.length > 0 ? `
+                <div class="flex flex-wrap gap-2">
+                  ${dish.dietary.map(diet => `
+                    <span class="text-xs px-2 py-1 bg-gray-100 rounded-full" title="${escapeHtml(diet)}">
+                      <i class="fas ${getDietaryIcon(diet)} text-yellow-500"></i>
+                    </span>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+        
+        sectionsHtml += `
+            </div>
+        `;
+        
+        // Remove all gallery sections
+        
+        sectionsHtml += `
+          </section>
+        `;
+      });
+      
+      // Combine all HTML and render to content section
+      contentSection.innerHTML = introHtml + tabsHtml + sectionsHtml;
+      
+      // Add event listeners for tabs
+      setupTabEventListeners();
+    }
+    
+    // Helper to get dietary icon
+    function getDietaryIcon(diet) {
+      const icons = {
+        'vegetarian': 'fa-leaf',
+        'vegan': 'fa-seedling',
+        'gluten-free': 'fa-ban',
+        'spicy': 'fa-pepper-hot',
+        'chefs-special': 'fa-award'
+      };
+      
+      return icons[diet.toLowerCase()] || 'fa-utensils';
+    }
+    
+    // Setup tab switching
+    function setupTabEventListeners() {
+        const tabs = document.querySelectorAll('.menu-tab');
+      
+        tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // Remove active class from all tabs
+          tabs.forEach(t => t.classList.remove('active'));
+          
+          // Add active class to clicked tab
+          this.classList.add('active');
+          
+          // Hide all sections
+          const sections = document.querySelectorAll('.menu-section');
+          sections.forEach(section => section.classList.add('hidden'));
+          
+          // Show corresponding section
+          const tabId = this.getAttribute('data-tab');
+          const targetSection = document.getElementById(`menu-section-${tabId}`);
+          
+          targetSection.classList.remove('hidden');
+          
+          // Add fade-in animation
+          targetSection.classList.add('menu-section-active');
+          setTimeout(() => {
+            targetSection.classList.remove('menu-section-active');
+          }, 500);
+        });
+      });
+    }
+    
+    // Setup modals
+    function setupModals() {
+      // Close modals
+      document.querySelectorAll('.close-modal').forEach(button => {
+        button.addEventListener('click', function() {
+          const modal = this.closest('[id$="-modal"]');
+          if (modal) {
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+              modal.classList.add('hidden');
+              modal.classList.remove('opacity-0');
+            }, 300);
+          }
+        });
+      });
+      
+      // Admin buttons
+      document.getElementById('add-dish-button').addEventListener('click', function() {
+        document.getElementById('add-dish-modal').classList.remove('hidden');
+      });
+      
+      document.getElementById('manage-categories-button').addEventListener('click', function() {
+        populateCategoryList();
+        document.getElementById('manage-categories-modal').classList.remove('hidden');
+      });
+      
+      document.getElementById('manage-dishes-button').addEventListener('click', function() {
+        populateDishManager();
+        document.getElementById('manage-dishes-modal').classList.remove('hidden');
+      });
+      
+      // Add dish form
+      document.getElementById('add-dish-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        try {
+          // Get form values
+          const name = document.getElementById('dish-name').value;
+          const price = document.getElementById('dish-price').value;
+          const description = document.getElementById('dish-description').value;
+          const categoryId = document.getElementById('dish-category').value;
+          
+          // Get selected dietary options
+          const dietaryCheckboxes = document.querySelectorAll('#add-dish-form input[type="checkbox"]:checked');
+          const dietary = Array.from(dietaryCheckboxes).map(cb => cb.value);
+          
+          // Generate unique ID based on name
+          const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+          
+          // Create new dish object
+          const newDish = {
+            id,
+            name,
+            price,
+            description,
+            dietary,
+            image: null
+          };
+          
+          // Find the category and add the dish
+          const category = menuData.categories.find(c => c.id === categoryId);
+          if (category) {
+            // Ensure dishes array exists
+            if (!category.dishes) {
+              category.dishes = [];
+            }
+            
+            // Add the new dish
+            category.dishes.push(newDish);
+            
+            // Save the updated menu data
+            await saveMenuData();
+            
+            // Show success message
+            showNotification('Dish added successfully!', 'success');
+            
+            // Reset form and close modal
+            this.reset();
+            document.getElementById('add-dish-modal').classList.add('hidden');
+            
+            // Refresh menu data to show the new dish
+            fetchMenuData();
+          } else {
+            throw new Error('Category not found');
+          }
+        } catch (error) {
+          console.error('Error adding dish:', error);
+          showNotification('Error adding dish: ' + error.message, 'error');
+        }
+      });
+      
+      // Edit dish form
+      document.getElementById('edit-dish-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        try {
+          // Get form values
+          const dishId = document.getElementById('edit-dish-id').value;
+          const name = document.getElementById('edit-dish-name').value;
+          const price = document.getElementById('edit-dish-price').value;
+          const description = document.getElementById('edit-dish-description').value;
+          const newCategoryId = document.getElementById('edit-dish-category').value;
+          
+          // Get selected dietary options
+          const dietaryCheckboxes = document.querySelectorAll('#edit-dietary-options input:checked');
+          const dietary = Array.from(dietaryCheckboxes).map(cb => cb.value);
+          
+          // Find the dish and its current category
+          let currentCategory = null;
+          let dishIndex = -1;
+          let targetDish = null;
+          
+          menuData.categories.forEach(category => {
+            const index = category.dishes.findIndex(d => d.id === dishId);
+            if (index !== -1) {
+              currentCategory = category;
+              dishIndex = index;
+              targetDish = { ...category.dishes[index] };
+            }
+          });
+          
+          if (!targetDish) {
+            throw new Error('Dish not found');
+          }
+          
+          // Update dish properties
+          targetDish.name = name;
+          targetDish.price = price;
+          targetDish.description = description;
+          targetDish.dietary = dietary;
+          
+          // Check if the category has changed
+          if (currentCategory.id !== newCategoryId) {
+            // Remove from current category
+            currentCategory.dishes.splice(dishIndex, 1);
+            
+            // Add to new category
+            const newCategory = menuData.categories.find(c => c.id === newCategoryId);
+            if (newCategory) {
+              newCategory.dishes.push(targetDish);
+            } else {
+              throw new Error('New category not found');
+            }
+          } else {
+            // Update in the same category
+            currentCategory.dishes[dishIndex] = targetDish;
+          }
+          
+          // Save the updated menu data
+          await saveMenuData();
+          
+          // Show success message
+          showNotification('Dish updated successfully!', 'success');
+          
+          // Close modal and refresh menu
+          document.getElementById('edit-dish-modal').classList.add('hidden');
+          fetchMenuData();
+          
+        } catch (error) {
+          console.error('Error updating dish:', error);
+          showNotification('Error updating dish: ' + error.message, 'error');
+        }
+      });
+    }
+    
+    // Populate category selections in add/edit dish forms
+    function populateCategorySelects(categories) {
+      const addSelect = document.getElementById('dish-category');
+      const editSelect = document.getElementById('edit-dish-category');
+      
+      const optionsHtml = categories.map(category => 
+        `<option value="${category.id}">${category.name}</option>`
+      ).join('');
+      
+      addSelect.innerHTML = optionsHtml;
+      editSelect.innerHTML = optionsHtml;
+    }
+    
+    // Populate category list for the manage categories modal
+    function populateCategoryList() {
+      const categoryList = document.getElementById('category-list');
+      
+      let html = '';
+      menuData.categories.forEach(category => {
+        html += `
+          <li class="flex items-center justify-between p-3 bg-white rounded-md shadow-sm border border-gray-200">
+            <div class="flex items-center">
+              <i class="fas fa-grip-lines mr-3 text-gray-400 cursor-move"></i>
+              <span>${category.name}</span>
+            </div>
+            <div>
+              <button class="text-gray-500 hover:text-red-500 p-1 delete-category-btn" data-id="${category.id}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </li>
+        `;
+      });
+      
+      categoryList.innerHTML = html;
+      
+      // Make the list sortable
+      new Sortable(categoryList, {
+        animation: 150,
+        handle: '.fa-grip-lines',
+        ghostClass: 'bg-yellow-50'
+      });
+      
+      // Add event listeners for delete buttons
+      document.querySelectorAll('.delete-category-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const categoryId = this.getAttribute('data-id');
+          currentDeleteId = categoryId;
+          
+          // Display confirm delete modal
+          document.getElementById('confirm-delete-modal').classList.remove('hidden');
+        });
+      });
+    }
+    
+    // Populate dish manager
+    function populateDishManager() {
+      const dishTabs = document.getElementById('dish-tabs');
+          
+          // Create tabs for each category
+      let tabsHtml = '';
+      menuData.categories.forEach((category, index) => {
+        tabsHtml += `
+          <button class="dish-tab px-4 py-2 rounded-md ${index === 0 ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800'}" 
+                  data-category="${category.id}">
+            ${category.name}
+          </button>
+        `;
+      });
+      
+      dishTabs.innerHTML = tabsHtml;
+      
+      // Add event listeners to tabs
+      document.querySelectorAll('.dish-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          // Update tabs
+          document.querySelectorAll('.dish-tab').forEach(t => {
+            t.classList.remove('bg-gray-900', 'text-white');
+            t.classList.add('bg-gray-100', 'text-gray-800');
+          });
+          
+          this.classList.remove('bg-gray-100', 'text-gray-800');
+          this.classList.add('bg-gray-900', 'text-white');
+          
+          // Load dishes for selected category
+          const categoryId = this.getAttribute('data-category');
+          currentCategory = categoryId;
+          loadDishesForCategory(categoryId);
+        });
+      });
+      
+      // Load dishes for first category by default
+      if (menuData.categories.length > 0) {
+        currentCategory = menuData.categories[0].id;
+        loadDishesForCategory(currentCategory);
+      }
+    }
+    
+    // Load dishes for a specific category in the dish manager
+    function loadDishesForCategory(categoryId) {
+      const container = document.getElementById('dish-container');
+      const category = menuData.categories.find(c => c.id === categoryId);
+      
+      if (!category || !category.dishes || category.dishes.length === 0) {
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-40 text-gray-400">
+            <p class="mb-4">No dishes in this category</p>
+            <button class="px-4 py-2 bg-yellow-300 text-gray-900 rounded-md hover:bg-yellow-400 transition-colors">
+              Add a dish
+            </button>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '<ul id="sortable-dishes" class="space-y-3">';
+      
+      category.dishes.forEach(dish => {
+        html += `
+          <li class="flex items-center justify-between p-4 bg-gray-50 rounded-md shadow-sm border border-gray-200" data-id="${dish.id}">
+            <div class="flex items-center flex-1">
+              <i class="fas fa-grip-lines mr-3 text-gray-400 cursor-move"></i>
+              <div class="flex-1">
+                <div class="flex justify-between items-center mb-1">
+                  <h4 class="font-medium text-gray-900">${dish.name}</h4>
+                  <span class="font-semibold text-yellow-600">€${dish.price}</span>
+                </div>
+                <p class="text-sm text-gray-600 line-clamp-1">${dish.description}</p>
+              </div>
+            </div>
+            <div class="flex items-center ml-4">
+              <button class="text-gray-500 hover:text-gray-700 p-2 edit-dish-btn" data-id="${dish.id}">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="text-gray-500 hover:text-red-500 p-2 delete-dish-btn" data-id="${dish.id}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </li>
+        `;
+      });
+      
+      html += '</ul>';
+      container.innerHTML = html;
+      
+      // Make the list sortable
+      new Sortable(document.getElementById('sortable-dishes'), {
+        animation: 150,
+        handle: '.fa-grip-lines',
+        ghostClass: 'bg-yellow-50'
+      });
+      
+      // Add event listeners for edit and delete buttons
+      document.querySelectorAll('.edit-dish-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const dishId = this.getAttribute('data-id');
+          openEditDishModal(dishId);
+        });
+      });
+      
+      document.querySelectorAll('.delete-dish-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const dishId = this.getAttribute('data-id');
+          currentDeleteId = dishId;
+          
+          // Display confirm delete modal
+          document.getElementById('confirm-delete-modal').classList.remove('hidden');
+        });
+      });
+    }
+    
+    // Open edit dish modal
+    function openEditDishModal(dishId) {
+      // Find the dish in the menu data
+      let targetDish = null;
+      let dishCategory = null;
+      
+      menuData.categories.forEach(category => {
+        const dish = category.dishes.find(d => d.id === dishId);
+        if (dish) {
+          targetDish = dish;
+          dishCategory = category;
+        }
+      });
+      
+      if (!targetDish) return;
+      
+      // Populate the form
+      document.getElementById('edit-dish-id').value = targetDish.id;
+      document.getElementById('edit-dish-name').value = targetDish.name;
+      document.getElementById('edit-dish-price').value = targetDish.price;
+      document.getElementById('edit-dish-description').value = targetDish.description;
+      
+      // Set category
+      const categorySelect = document.getElementById('edit-dish-category');
+      for (let i = 0; i < categorySelect.options.length; i++) {
+        if (categorySelect.options[i].value === dishCategory.id) {
+          categorySelect.selectedIndex = i;
+          break;
+        }
+      }
+      
+      // Set dietary options
+      const dietaryOptions = document.querySelectorAll('#edit-dietary-options input');
+      dietaryOptions.forEach(option => {
+        option.checked = targetDish.dietary && targetDish.dietary.includes(option.value);
+      });
+      
+      // Show the modal
+      document.getElementById('edit-dish-modal').classList.remove('hidden');
+    }
+    
+    // Setup other event listeners
+    function setupEventListeners() {
+      // Confirm delete button
+      document.getElementById('confirm-delete-btn').addEventListener('click', async function() {
+        try {
+          const id = currentDeleteId;
+          if (!id) throw new Error('No item selected for deletion');
+          
+          // Check if we're deleting a category or a dish
+          if (currentCategory) {
+            // We're in dish management mode, so we're deleting a dish
+            const category = menuData.categories.find(c => c.id === currentCategory);
+            if (!category) throw new Error('Category not found');
+            
+            // Find and remove the dish
+            const dishIndex = category.dishes.findIndex(d => d.id === id);
+            if (dishIndex === -1) throw new Error('Dish not found');
+            
+            category.dishes.splice(dishIndex, 1);
+          } else {
+            // We're deleting a category
+            const categoryIndex = menuData.categories.findIndex(c => c.id === id);
+            if (categoryIndex === -1) throw new Error('Category not found');
+            
+            // Confirm if category has dishes
+            const category = menuData.categories[categoryIndex];
+            if (category.dishes && category.dishes.length > 0) {
+              if (!confirm(`The category "${category.name}" contains ${category.dishes.length} dishes. Are you sure you want to delete it?`)) {
+                document.getElementById('confirm-delete-modal').classList.add('hidden');
+            return;
+              }
+            }
+            
+            // Remove the category
+            menuData.categories.splice(categoryIndex, 1);
+          }
+          
+          // Save the updated menu data
+          await saveMenuData();
+          
+          // Show success message
+          showNotification('Item deleted successfully!', 'success');
+          
+          // Close the modal
+          document.getElementById('confirm-delete-modal').classList.add('hidden');
+          
+          // Refresh the UI
+          if (currentCategory) {
+            // If we deleted a dish, refresh the dish manager
+            loadDishesForCategory(currentCategory);
+          } else {
+            // If we deleted a category, refresh categories and menu
+            fetchMenuData();
+            populateCategoryList();
+          }
+          
+        } catch (error) {
+          console.error('Error deleting item:', error);
+          showNotification('Error deleting item: ' + error.message, 'error');
+          document.getElementById('confirm-delete-modal').classList.add('hidden');
+        }
+        
+        // Reset the current delete ID
+        currentDeleteId = null;
+      });
+      
+      // Add category button
+      document.getElementById('add-category-btn').addEventListener('click', async function() {
+        const newCategoryInput = document.getElementById('new-category');
+        const categoryName = newCategoryInput.value.trim();
+        
+        if (categoryName) {
+          try {
+            // Generate a slug ID from the name
+            const categoryId = categoryName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            
+            // Check if category with this ID already exists
+            const existingCategory = menuData.categories.find(c => c.id === categoryId);
+            if (existingCategory) {
+              throw new Error(`A category with the ID "${categoryId}" already exists`);
+            }
+            
+            // Create new category
+            const newCategory = {
+              id: categoryId,
+              name: categoryName,
+              dishes: []
+            };
+            
+            // Add to the menu data
+            menuData.categories.push(newCategory);
+            
+            // Save to server
+            await saveMenuData();
+            
+            // Show success message
+            showNotification('Category added successfully!', 'success');
+            
+            // Clear the input
+            newCategoryInput.value = '';
+            
+            // Refresh category list
+            populateCategoryList();
+            
+        } catch (error) {
+            console.error('Error adding category:', error);
+            showNotification('Error adding category: ' + error.message, 'error');
+          }
+        } else {
+          showNotification('Please enter a category name', 'error');
+        }
+      });
+      
+      // Save categories button
+      document.getElementById('save-categories-btn').addEventListener('click', function() {
+        // Get the updated category order from the UI
+        const categoryList = document.getElementById('category-list');
+        const categoryItems = categoryList.querySelectorAll('li');
+        
+        // Create a new array with the updated category order
+        const updatedCategories = [];
+        categoryItems.forEach(item => {
+          const categoryId = item.querySelector('.delete-category-btn').getAttribute('data-id');
+          const category = menuData.categories.find(c => c.id === categoryId);
+          if (category) {
+            updatedCategories.push(category);
+          }
+        });
+        
+        // Update the menuData with the new order
+        menuData.categories = updatedCategories;
+        
+        // Save the updated menu data to the server
+        saveMenuData()
+          .then(() => {
+            // Refresh the page to show updated categories
+            showNotification('Categories saved successfully!', 'success');
+            setTimeout(() => {
+              document.getElementById('manage-categories-modal').classList.add('hidden');
+              fetchMenuData(); // Refresh data
+            }, 1000);
+          })
+          .catch(error => {
+            showNotification('Error saving categories: ' + error.message, 'error');
+          });
+      });
+      
+      // Save dishes button
+      document.getElementById('save-dishes-btn').addEventListener('click', async function() {
+        try {
+          if (!currentCategory) {
+            throw new Error('No category selected');
+          }
+          
+          // Get the current category
+          const category = menuData.categories.find(c => c.id === currentCategory);
+          if (!category) {
+            throw new Error('Selected category not found');
+          }
+          
+          // Get the new order of dishes from the UI
+          const dishList = document.getElementById('sortable-dishes');
+          if (!dishList) {
+            throw new Error('Dish list not found');
+          }
+          
+          const dishItems = dishList.querySelectorAll('li');
+          
+          // Create a new array with the updated dish order
+          const updatedDishes = [];
+          dishItems.forEach(item => {
+            const dishId = item.getAttribute('data-id');
+            const dish = category.dishes.find(d => d.id === dishId);
+            if (dish) {
+              updatedDishes.push(dish);
+            }
+          });
+          
+          // Update the category's dishes with the new order
+          category.dishes = updatedDishes;
+          
+          // Save to server
+          await saveMenuData();
+          
+          // Show success message
+          showNotification('Dish order saved successfully!', 'success');
+          
+          // Close the modal
+          document.getElementById('manage-dishes-modal').classList.add('hidden');
+          
+          // Refresh menu
+          fetchMenuData();
+          
+        } catch (error) {
+          console.error('Error saving dish order:', error);
+          showNotification('Error saving dish order: ' + error.message, 'error');
+        }
+      });
+      
+      // Edit toggle
+      const editToggle = document.getElementById('edit-toggle');
+      const saveContent = document.getElementById('save-content');
+      const contentArea = document.getElementById('content');
+      
+      if (editToggle && saveContent && contentArea) {
+        editToggle.addEventListener('click', function() {
+          // Only make the intro section editable, not the entire content
+          const introSection = contentArea.querySelector('section:first-child');
+          const introTitle = introSection.querySelector('h2');
+          const introContent = introSection.querySelector('p');
+          
+          // Make only title and content paragraph editable
+          introTitle.setAttribute('contenteditable', 'true');
+          introContent.setAttribute('contenteditable', 'true');
+          
+          // Don't make anything else editable
+          contentArea.setAttribute('contenteditable', 'false');
+          
+          // Add visual indication for editable elements
+          introTitle.classList.add('editing');
+          introContent.classList.add('editing');
+          
+          editToggle.style.display = 'none';
+          saveContent.style.display = 'flex';
+        });
+        
+        saveContent.addEventListener('click', async function() {
+          try {
+            // Get the edited content from the intro section
+            const introSection = contentArea.querySelector('section:first-child');
+            if (introSection) {
+              // Get plain text content without HTML to avoid JSON issues
+              const introTitle = introSection.querySelector('h2').textContent.trim();
+              const introContent = introSection.querySelector('p').textContent.trim();
+              
+              // Update the menu data with plain text (avoiding HTML)
+              menuData.introduction.title = introTitle;
+              menuData.introduction.content = introContent;
+              
+              // Reset editable states for specific elements only
+              introSection.querySelector('h2').setAttribute('contenteditable', 'false');
+              introSection.querySelector('h2').classList.remove('editing');
+              introSection.querySelector('p').setAttribute('contenteditable', 'false');
+              introSection.querySelector('p').classList.remove('editing');
+              
+              // Update button visibility
+              editToggle.style.display = 'flex';
+              saveContent.style.display = 'none';
+              
+              // Save to server
+              await saveMenuData();
+              
+              // Show success message
+              showNotification('Content saved successfully!', 'success');
+            } else {
+              throw new Error('Introduction section not found');
+            }
+          } catch (error) {
+            console.error('Error saving content:', error);
+            showNotification('Error saving content: ' + error.message, 'error');
+          }
+        });
+      }
+    }
+    
+    // Save menu data to the server
+    function saveMenuData() {
+      // Create a sanitized copy of the menu data to ensure valid JSON
+      const sanitizedMenuData = JSON.parse(JSON.stringify(menuData));
+      
+      return fetch('/api/menu', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sanitizedMenuData)
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.error || 'Failed to save menu data');
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Menu data saved:', data);
+        return data;
+      })
+      .catch(error => {
+        console.error('Error saving menu data:', error);
+        showNotification('Error saving menu data: ' + error.message, 'error');
+        throw error;
+      });
+    }
+    
+    // Show a notification message
+    function showNotification(message, type = 'info') {
+      // Create notification element if it doesn't exist
+      let notification = document.getElementById('notification');
+      if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'notification';
+        notification.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 z-50';
+        document.body.appendChild(notification);
+      }
+      
+      // Set styles based on notification type
+      notification.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 z-50';
+      
+      if (type === 'success') {
+        notification.classList.add('bg-green-500', 'text-white');
+      } else if (type === 'error') {
+        notification.classList.add('bg-red-500', 'text-white');
+      } else {
+        notification.classList.add('bg-blue-500', 'text-white');
+      }
+      
+      notification.textContent = message;
+      notification.classList.remove('translate-y-20', 'opacity-0');
+      
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    function updateHeroImage() {
+      fetch('/api/content?page=menu')
+        .then(response => response.json())
+        .then(data => {
+          if (data.heroImage) {
+            document.getElementById('hero-image').src = data.heroImage;
+          }
+        })
+        .catch(error => console.error('Error loading hero image:', error));
+    }
+
+    // Function to ensure a placeholder image exists
+    function ensurePlaceholderImage() {
+      // Check if the placeholder image exists
+      fetch('images/menu/placeholder.jpg')
+        .then(response => {
+          if (!response.ok) {
+            // If the placeholder doesn't exist, create it
+        createPlaceholderImage();
+          }
+        })
+        .catch(() => {
+          // If there's an error (e.g., file not found), create the placeholder
+          createPlaceholderImage();
+        });
+    }
+
+    // Function to create a placeholder image
+    function createPlaceholderImage() {
+      // Create a canvas element
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 600;
+      
+      // Get the context and draw a placeholder image
+      const ctx = canvas.getContext('2d');
+      
+      // Fill background
+      ctx.fillStyle = '#f3f4f6';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw text
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = 'bold 32px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Image Placeholder', canvas.width / 2, canvas.height / 2);
+      
+      // Draw fork and knife icon
+      ctx.font = 'bold 64px Arial';
+      ctx.fillText('🍽️', canvas.width / 2, canvas.height / 2 - 80);
+      
+      // Convert to blob and save
+      canvas.toBlob(blob => {
+        const formData = new FormData();
+        formData.append('image', blob, 'placeholder.jpg');
+        
+        fetch('/api/upload-placeholder', {
+          method: 'POST',
+          body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Placeholder image created:', data);
+      })
+      .catch(error => {
+        console.error('Error creating placeholder image:', error);
+        });
+      });
+    }
+
+    // Add image gallery editing function
+    function setupImageGalleryEditing() {
+      if (!isAuthenticated) return;
+      
+      // Add edit buttons to each gallery
+      document.querySelectorAll('.gallery-container').forEach((gallery, galleryIndex) => {
+        const categoryId = gallery.closest('.menu-section').id.replace('menu-section-', '');
+        const editButton = document.createElement('button');
+        editButton.className = 'edit-gallery-btn px-3 py-1 bg-blue-600 text-white rounded-md text-sm absolute top-0 right-0';
+        editButton.innerHTML = '<i class="fas fa-edit mr-1"></i> Edit Gallery';
+        editButton.dataset.categoryId = categoryId;
+        
+        // Add positioning context to gallery title container
+        const titleContainer = gallery.querySelector('.gallery-title').parentElement;
+        titleContainer.style.position = 'relative';
+        titleContainer.appendChild(editButton);
+        
+        // Add click event to edit button
+        editButton.addEventListener('click', function() {
+          openGalleryEditModal(categoryId);
+        });
+      });
+    }
+    
+    // Open gallery edit modal
+    function openGalleryEditModal(categoryId) {
+      // Find the category
+      const category = menuData.categories.find(c => c.id === categoryId);
+      if (!category) return;
+      
+      // Get or create gallery data
+      if (!category.gallery) {
+        category.gallery = [];
+        
+        // Initialize with default images if available
+        if (categoryImages[categoryId]) {
+          category.gallery = [...categoryImages[categoryId]];
+        } else {
+          category.gallery = [
+            'images/menu/placeholder.jpg',
+            'images/menu/placeholder.jpg',
+            'images/menu/placeholder.jpg'
+          ];
+        }
+      }
+      
+      // Create modal markup
+      const modalHtml = `
+        <div id="gallery-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto flex items-center justify-center p-4">
+          <div class="bg-white rounded-lg w-full max-w-4xl p-6 shadow-xl">
+            <div class="flex justify-between items-center mb-6">
+              <h2 class="text-2xl font-bold text-gray-900">Edit Gallery: ${category.name}</h2>
+              <button class="text-gray-500 hover:text-gray-700 p-2 close-modal">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              ${category.gallery.map((img, idx) => `
+                <div class="border rounded-md p-3 relative gallery-item">
+                  <img src="${img}" alt="Gallery image ${idx+1}" class="w-full h-48 object-cover mb-3" onerror="this.onerror=null; this.src='images/menu/placeholder.jpg';">
+                  <div class="flex justify-between">
+                    <label class="block text-gray-700 text-sm font-bold mb-2 w-full">
+                      <span class="sr-only">Change Image ${idx+1}</span>
+                      <input 
+                        type="file" 
+                        class="gallery-image-input hidden" 
+                        accept="image/*" 
+                        data-index="${idx}"
+                      >
+                      <button class="select-image-btn w-full px-3 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors text-sm">
+                        Change Image
+                      </button>
+                    </label>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            
+            <div class="flex justify-end pt-4 border-t border-gray-200">
+              <button type="button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md mr-3 close-modal">Cancel</button>
+              <button id="save-gallery-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Add modal to the page
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      
+      // Setup close buttons
+      document.querySelectorAll('#gallery-edit-modal .close-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('gallery-edit-modal').remove();
+        });
+      });
+      
+      // Setup image selection buttons
+      document.querySelectorAll('#gallery-edit-modal .select-image-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const input = this.closest('label').querySelector('input[type="file"]');
+          input.click();
+        });
+      });
+      
+      // Setup file inputs
+      document.querySelectorAll('#gallery-edit-modal .gallery-image-input').forEach(input => {
+        input.addEventListener('change', async function(e) {
+          if (!this.files || !this.files[0]) return;
+          
+          const file = this.files[0];
+          const index = parseInt(this.dataset.index, 10);
+          
+          // Create FormData and upload the image
+          const formData = new FormData();
+          formData.append('image', file);
+          
+          try {
+            const response = await fetch('/api/upload-image', {
+              method: 'POST',
+              body: formData,
+            });
+            
+            if (!response.ok) {
+              throw new Error('Failed to upload image');
+            }
+            
+            const data = await response.json();
+            
+            // Update the preview image
+            const previewImg = this.closest('.gallery-item').querySelector('img');
+            previewImg.src = data.url;
+            
+            // Update the gallery data
+            category.gallery[index] = data.url;
+          } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('Failed to upload image. Please try again.');
+          }
+        });
+      });
+      
+      // Setup save button
+      document.getElementById('save-gallery-btn').addEventListener('click', async function() {
+        try {
+          // Save the updated menu data to the server
+          await saveMenuData();
+          
+          // Close the modal
+          document.getElementById('gallery-edit-modal').remove();
+          
+          // Refresh the menu to show the updated gallery
+          fetchMenuData();
+          
+          // Show success notification
+          showNotification('Gallery saved successfully!', 'success');
+        } catch (error) {
+          console.error('Error saving gallery:', error);
+          showNotification('Error saving gallery: ' + error.message, 'error');
+        }
+      });
+    }
+
+    function setupMenuEditing() {
+      if (!isAuthenticated) {
+        return; // Only authorized users can edit the menu
+      }
+      
+      console.log('Setting up menu editing functionality');
+      
+      // Add edit buttons to dishes
+      document.querySelectorAll('.menu-item').forEach(item => {
+        const editButton = document.createElement('button');
+        editButton.className = 'absolute top-2 right-2 p-2 bg-white rounded-full shadow hover:bg-gray-100 text-gray-600';
+        editButton.innerHTML = '<i class="fas fa-edit"></i>';
+        item.style.position = 'relative';
+        item.appendChild(editButton);
+        
+        // Get dish info
+        const dishName = item.querySelector('h4').textContent.trim();
+        const dishId = dishName.toLowerCase().replace(/\s+/g, '-');
+        
+        // Add click event
+        editButton.addEventListener('click', function() {
+          // Find the dish in menuData
+          let targetDish = null;
+          let category = null;
+          
+          menuData.categories.forEach(cat => {
+            const dish = cat.dishes.find(d => d.id === dishId || d.name === dishName);
+            if (dish) {
+              targetDish = dish;
+              category = cat;
+            }
+          });
+          
+          if (targetDish) {
+            openEditDishModal(targetDish.id);
+          }
+        });
+      });
+    }
+
+    function toggleEditMode(enable) {
+      const contentDiv = document.getElementById('content');
+      const editButton = document.getElementById('edit-toggle');
+      const saveButton = document.getElementById('save-content');
+      
+      if (enable) {
+        // Only make the intro section editable
+        const introSection = contentDiv.querySelector('section:first-child');
+        const introTitle = introSection.querySelector('h2');
+        const introContent = introSection.querySelector('p');
+        
+        // Make only title and content paragraph editable
+        introTitle.setAttribute('contenteditable', 'true');
+        introContent.setAttribute('contenteditable', 'true');
+        
+        // Make sure the content div itself is not editable
+        contentDiv.setAttribute('contenteditable', 'false');
+        
+        // Add visual indication for editable elements
+        introTitle.classList.add('editing');
+        introContent.classList.add('editing');
+        
+        // Update button states
+        editButton.style.display = 'none';
+        if (saveButton) saveButton.style.display = 'flex';
+      } else {
+        // Only disable editing on the intro elements
+        const introSection = contentDiv.querySelector('section:first-child');
+        if (introSection) {
+          const introTitle = introSection.querySelector('h2');
+          const introContent = introSection.querySelector('p');
+          
+          if (introTitle) {
+            introTitle.setAttribute('contenteditable', 'false');
+            introTitle.classList.remove('editing');
+          }
+          
+          if (introContent) {
+            introContent.setAttribute('contenteditable', 'false');
+            introContent.classList.remove('editing');
+          }
+        }
+        
+        // Update button states
+        editButton.style.display = 'flex';
+        if (saveButton) saveButton.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

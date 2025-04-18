@@ -1,0 +1,163 @@
+{
+  "introduction": {
+    "title": "Our Culinary Experience",
+    "content": "Welcome to our culinary journey where tradition meets innovation. Each dish is crafted with care using locally-sourced ingredients and time-honored techniques. Our seasonal menu celebrates the richness of Mediterranean flavors with a contemporary twist. Bon appetit!"
+  },
+  "dietary": [
+    {
+      "name": "Vegetarian",
+      "icon": "fa-leaf"
+    },
+    {
+      "name": "Vegan",
+      "icon": "fa-seedling"
+    },
+    {
+      "name": "Gluten-Free",
+      "icon": "fa-ban"
+    },
+    {
+      "name": "Spicy",
+      "icon": "fa-pepper-hot"
+    },
+    {
+      "name": "Chef's Special",
+      "icon": "fa-award"
+    }
+  ],
+  "categories": [
+    {
+      "id": "starters",
+      "name": "Starters",
+      "dishes": [
+        {
+          "id": "bruschetta",
+          "name": "Bruschetta",
+          "price": "8.95",
+          "description": "Grilled sourdough bread topped with fresh tomatoes, basil, garlic, and extra virgin olive oil.",
+          "dietary": [
+            "vegetarian"
+          ]
+        },
+        {
+          "id": "arancini",
+          "name": "Arancini",
+          "price": "9.95",
+          "description": "Sicilian rice balls stuffed with mozzarella, peas, and a touch of saffron, lightly fried to perfection.",
+          "dietary": [
+            "vegetarian"
+          ]
+        },
+        {
+          "id": "carpaccio",
+          "name": "Beef Carpaccio",
+          "price": "12.95",
+          "description": "Thinly sliced raw beef with arugula, shaved parmesan, capers, and truffle oil.",
+          "dietary": []
+        }
+      ]
+    },
+    {
+      "id": "pasta",
+      "name": "Pasta",
+      "dishes": [
+        {
+          "id": "spaghetti-carbonara",
+          "name": "Spaghetti Carbonara",
+          "price": "16.95",
+          "description": "Classic Roman dish with pancetta, egg, pecorino cheese, and black pepper.",
+          "dietary": []
+        },
+        {
+          "id": "penne-arrabbiata",
+          "name": "Penne all'Arrabbiata",
+          "price": "14.95",
+          "description": "Penne pasta with spicy tomato sauce, garlic, and parsley.",
+          "dietary": [
+            "vegetarian",
+            "spicy"
+          ]
+        },
+        {
+          "id": "risotto-funghi",
+          "name": "Risotto ai Funghi",
+          "price": "18.95",
+          "description": "Creamy Arborio rice with wild mushrooms, white wine, and parmesan.",
+          "dietary": [
+            "vegetarian",
+            "gluten-free"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "main-courses",
+      "name": "Main Courses",
+      "dishes": [
+        {
+          "id": "osso-buco",
+          "name": "Osso Buco",
+          "price": "26.95",
+          "description": "Slow-braised veal shanks in white wine and vegetables, served with saffron risotto.",
+          "dietary": [
+            "chefs-special"
+          ]
+        },
+        {
+          "id": "bistecca-fiorentina",
+          "name": "Bistecca alla Fiorentina",
+          "price": "32.95",
+          "description": "T-bone steak grilled to perfection with rosemary and garlic, served with roasted potatoes.",
+          "dietary": [
+            "gluten-free"
+          ]
+        },
+        {
+          "id": "eggplant-parmigiana",
+          "name": "Eggplant Parmigiana",
+          "price": "18.95",
+          "description": "Layers of eggplant, tomato sauce, mozzarella, and parmesan cheese baked to perfection.",
+          "dietary": [
+            "vegetarian"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "desserts",
+      "name": "Desserts",
+      "dishes": [
+        {
+          "id": "tiramisu",
+          "name": "Tiramisu",
+          "price": "8.95",
+          "description": "Classic Italian dessert with layers of coffee-soaked ladyfingers and mascarpone cream.",
+          "dietary": [
+            "vegetarian"
+          ]
+        },
+        {
+          "id": "panna-cotta",
+          "name": "Vanilla Panna Cotta",
+          "price": "8.95",
+          "description": "Silky vanilla custard with seasonal berry coulis and fresh mint.",
+          "dietary": [
+            "vegetarian",
+            "gluten-free"
+          ]
+        },
+        {
+          "id": "cannoli",
+          "name": "Sicilian Cannoli",
+          "price": "9.95",
+          "description": "Crispy pastry tubes filled with sweet ricotta cream, pistachios, and chocolate chips.",
+          "dietary": [
+            "vegetarian"
+          ]
+        }
+      ]
+    }
+  ],
+  "title": "Our Menu",
+  "footer": "© 2025 La Bella Cucina. All rights reserved."
+}

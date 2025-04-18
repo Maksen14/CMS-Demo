@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>La Bella Cucina - About</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="animations.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hammersmith+One&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    html {
+      overflow-x: hidden;
+      width: 100%;
+    }
+    
+    body {
+      overflow-x: hidden;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      position: relative;
+    }
+    
+    .gradient-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.7) 100%);
+      z-index: 1;
+    }
+    
+    /* Hero section with fixed background */
+    .hero-section {
+      position: relative;
+      z-index: 0;
+    }
+    
+    /* Pseudo-element for fixed hero background */
+    .hero-section::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      z-index: -1;
+    }
+    
+    /* Override animation for hero section */
+    .hero-section.fade-in,
+    .hero-section.fade-in.show {
+      background-color: transparent !important;
+      opacity: 1 !important; /* Always visible */
+      transform: none !important; /* No transform */
+    }
+    
+    /* Make background images exempt from animation effects */
+    .hero-section .bg-fixed,
+    .hero-section[style*="background-image"],
+    div[style*="background-image"] {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+    
+    /* Only animate the text content in hero section */
+    .hero-text {
+      position: relative;
+      z-index: 5;
+    }
+    
+    .admin-controls {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 50;
+    }
+
+    .quote-section {
+      height: 40vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', serif;
+    }
+    
+    /* Preserve background colors during animation - ONLY for quote section */
+    .quote-section.bg-black {
+      background-color: #000 !important;
+      z-index: 0;
+      position: relative;
+    }
+    
+    /* Make the quote text animate but not the background */
+    .quote-section.bg-black::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #000;
+      z-index: -1;
+    }
+    
+    /* Keep black background visible during all stages of animation */
+    .quote-section.bg-black.fade-in,
+    .quote-section.bg-black.fade-in.show {
+      background-color: transparent !important;
+    }
+    
+    /* Only animate the quote text, not the section or background */
+    .quote-section .quote-text {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .quote-text {
+      font-size: 2.5rem;
+      line-height: 1.4;
+      font-style: italic;
+      letter-spacing: 1px;
+      background-color: transparent !important;
+    }
+    
+    @media (max-width: 768px) {
+      .quote-text {
+        font-size: 1.8rem;
+      }
+    }
+    
+    /* Ensure ONLY the quote section with bg-black keeps its background */
+    section.quote-section.bg-black,
+    section.quote-section.bg-black.fade-in,
+    section.quote-section.bg-black.fade-in.show {
+      background-color: #000 !important;
+    }
+    
+    .content-section {
+      min-height: 100vh;
+    }
+    
+    .content-image {
+      height: 100%;
+      width: 100%;
+      object-fit: cover;
+    }
+    
+    @media (max-width: 768px) {
+      .content-section {
+        flex-direction: column-reverse;
+      }
+      
+      .content-image-container {
+        height: 50vh;
+      }
+      
+      .content-text-container {
+        padding: 2rem;
+      }
+    }
+    
+    /* Transparent navbar styles */
+    .navbar-transparent {
+      background-color: transparent;
+      box-shadow: none;
+      transition: all 0.3s ease-in-out;
+    }
+
+    .navbar-scrolled {
+      background-color: #111827; /* bg-gray-900 */
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Text colors for transparent navbar */
+    .navbar-transparent .nav-link {
+      color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .navbar-transparent .hover-link:hover {
+      color: white !important;
+    }
+
+    .navbar-transparent #site-title {
+      color: white;
+    }
+
+    .navbar-transparent #mobile-menu-button {
+      color: white;
+    }
+
+    .navbar-transparent .border-black {
+      border-color: white;
+    }
+
+    /* Scrolled navbar styles */
+    .navbar-scrolled .nav-link {
+      color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .navbar-scrolled .hover-link:hover {
+      color: #FBBF24 !important; /* yellow-400 */
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white">
+  <!-- Navigation -->
+  <nav class="fixed w-full z-50 navbar-transparent">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <!-- Logo -->
+        <a href="index.html" class="text-2xl font-bold transition-colors" id="site-title">
+          <i class="fas fa-utensils mr-2"></i>La Bella Cucina
+        </a>
+        
+        <!-- Mobile menu button -->
+        <div class="md:hidden">
+          <button id="mobile-menu-button" class="focus:outline-none">
+            <i class="fas fa-bars text-2xl"></i>
+          </button>
+        </div>
+        
+        <!-- Desktop menu -->
+        <div class="hidden md:flex items-center space-x-6">
+          <a href="index.html" class="px-3 py-2 transition-colors nav-link hover-link">Home</a>
+          <a href="menu.html" class="px-3 py-2 transition-colors nav-link hover-link">Menu</a>
+          <a href="contact.html" class="px-3 py-2 transition-colors nav-link hover-link">Reservations</a>
+          <a href="about.html" class="px-3 py-2 transition-colors nav-link border-b-2 border-black">About</a>
+          <a href="reservations-admin.html" class="px-3 py-2 transition-colors nav-link hover-link" style="display: none;">
+            <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
+          </a>
+          <a href="/logout" id="logout-link" class="px-3 py-2 transition-colors nav-link hover-link hidden">
+            <i class="fas fa-sign-out-alt mr-1"></i>Logout
+          </a>
+        </div>
+      </div>
+      
+      <!-- Mobile menu (hidden by default) -->
+      <div id="mobile-menu" class="md:hidden hidden pt-4 pb-2">
+        <div class="flex flex-col space-y-3">
+          <a href="index.html" class="px-3 py-2 transition-colors nav-link hover-link">Home</a>
+          <a href="menu.html" class="px-3 py-2 transition-colors nav-link hover-link">Menu</a>
+          <a href="contact.html" class="px-3 py-2 transition-colors nav-link hover-link">Reservations</a>
+          <a href="about.html" class="px-3 py-2 transition-colors nav-link font-semibold">About</a>
+          <a href="reservations-admin.html" class="px-3 py-2 transition-colors nav-link hover-link" style="display: none;">
+            <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
+          </a>
+          <a href="/logout" id="mobile-logout-link" class="px-3 py-2 transition-colors nav-link hover-link hidden">
+            <i class="fas fa-sign-out-alt mr-1"></i>Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <div id="content" contenteditable="false">
+      <!-- Content will be loaded dynamically via JS, but providing a placeholder to ensure animations work -->
+      <div id="animation-container">
+        <!-- This div will be replaced when content loads but ensures animations are set up correctly -->
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-black text-gray-300 py-12">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center md:text-left">
+          <h3 class="text-xl font-bold text-white mb-4">La Bella Cucina</h3>
+          <p class="text-sm">Experience authentic Italian cuisine in a warm and welcoming atmosphere.</p>
+        </div>
+        <div class="text-center">
+          <h3 class="text-xl font-bold text-white mb-4">Quick Links</h3>
+          <ul class="space-y-2">
+            <li><a href="index.html" class="hover:text-white transition-colors">Home</a></li>
+            <li><a href="menu.html" class="hover:text-white transition-colors">Menu</a></li>
+            <li><a href="about.html" class="hover:text-white transition-colors">About</a></li>
+            <li><a href="contact.html" class="hover:text-white transition-colors">Reservations</a></li>
+            <li><a href="/login" id="footer-login-link" class="hover:text-white transition-colors">
+              <i class="fas fa-sign-in-alt mr-1"></i>Login
+            </a></li>
+            <li><a href="/logout" id="footer-logout-link" class="hover:text-white transition-colors hidden">
+              <i class="fas fa-sign-out-alt mr-1"></i>Logout
+            </a></li>
+          </ul>
+        </div>
+        <div class="text-center md:text-right">
+          <h3 class="text-xl font-bold text-white mb-4">Contact Us</h3>
+          <p class="text-sm">123 Main Street, Food City<br>Phone: +1 234 567 89</p>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-gray-800 text-center" id="footer-text"></div>
+    </div>
+  </footer>
+
+  <!-- Admin Controls -->
+  <section class="admin-controls" style="position: fixed !important; bottom: 20px; right: 20px; z-index: 9999 !important;">
+    <div class="flex flex-wrap gap-3 md:gap-4">
+      <button id="edit-toggle" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+        <i class="fas fa-edit mr-2"></i>Edit Content
+      </button>
+      <button id="save-content" style="display:none;" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+        <i class="fas fa-save mr-2"></i>Save
+      </button>
+      <button id="edit-images-button" style="display:none;" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+        <i class="fas fa-images mr-2"></i>Edit Images
+      </button>
+    </div>
+  </section>
+
+  <script src="script.js"></script>
+  <script>
+    // Handle scrolling navbar effect
+    document.addEventListener('DOMContentLoaded', function() {
+      const navbar = document.querySelector('nav');
+      
+      // Function to handle scroll events
+      function handleScroll() {
+        if (window.scrollY > 10) {
+          navbar.classList.add('navbar-scrolled');
+          navbar.classList.remove('navbar-transparent');
+        } else {
+          navbar.classList.add('navbar-transparent');
+          navbar.classList.remove('navbar-scrolled');
+        }
+      }
+      
+      // Add scroll event listener
+      window.addEventListener('scroll', handleScroll);
+      
+      // Initialize navbar state on page load
+      handleScroll();
+      
+      // Manual animation initialization for debugging
+      function initializeTestAnimations() {
+        console.log('Initializing test animations');
+        
+        // Create a test observer
+        const testObserver = new IntersectionObserver(
+          (entries, observer) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('show');
+                console.log('Element shown:', entry.target.className);
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.1 }
+        );
+        
+        // Wait for content to load
+        setTimeout(() => {
+          // Special handling for hero sections with background images
+          const heroSections = document.querySelectorAll('.hero-section, section[class*="bg-cover"], [style*="background-image"]');
+          heroSections.forEach((hero) => {
+            console.log('Found hero section in direct script');
+            
+            // Don't apply animation classes to the hero section itself
+            // This ensures the background remains fixed
+            
+            // Only animate child elements
+            const heroContent = hero.querySelector('.hero-text, .container, .mx-auto');
+            if (heroContent) {
+              heroContent.classList.add('fade-in');
+              heroContent.classList.add('delay-200');
+              testObserver.observe(heroContent);
+            }
+            
+            // Animate individual elements inside the hero
+            const heroElements = hero.querySelectorAll('h1, h2, h3, p, a.btn, a.bg-white, a.rounded-full, button');
+            heroElements.forEach((element, i) => {
+              if (element.tagName === 'H1' || element.tagName === 'H2' || element.tagName === 'H3') {
+                element.classList.add('fade-in-down');
+              } else if (element.tagName === 'P') {
+                element.classList.add('fade-in');
+              } else {
+                element.classList.add('fade-in-up');
+              }
+              element.classList.add(`delay-${(i % 5 + 1) * 100}`);
+              testObserver.observe(element);
+            });
+            
+            // Don't observe the hero section itself
+          });
+          
+          // Special handling for quote sections with black backgrounds
+          const quoteSection = document.querySelector('.quote-section.bg-black');
+          if (quoteSection) {
+            console.log('Found black quote section');
+            
+            // Only animate the text content, not the section
+            const quoteText = quoteSection.querySelector('.quote-text');
+            if (quoteText) {
+              quoteText.classList.add('fade-in');
+              quoteText.classList.add('delay-200');
+              testObserver.observe(quoteText);
+            }
+            
+            // Don't observe the section for animation
+            // This prevents the black background from being animated
+          }
+          
+          // Handle non-black quote sections normally
+          const regularQuoteSections = document.querySelectorAll('.quote-section:not(.bg-black)');
+          regularQuoteSections.forEach((section, index) => {
+            section.classList.add('fade-in');
+            section.classList.add(`delay-${(index % 5 + 1) * 100}`);
+            testObserver.observe(section);
+          });
+          
+          // Apply test animations to all other sections and elements (excluding hero sections and quote sections)
+          const sections = document.querySelectorAll('section:not(.quote-section):not(.hero-section):not([class*="bg-cover"]):not([style*="background-image"]), h1, h2, h3, p, img');
+          console.log('Found elements for animation:', sections.length);
+          
+          sections.forEach((section, index) => {
+            // Apply appropriate animation class
+            if (section.tagName === 'SECTION') {
+              section.classList.add('fade-in');
+              section.classList.add(`delay-${(index % 5 + 1) * 100}`);
+            } else if (section.tagName === 'H1' || section.tagName === 'H2' || section.tagName === 'H3') {
+              section.classList.add('fade-in-down');
+              section.classList.add(`delay-${(index % 5 + 1) * 100}`);
+            } else if (section.tagName === 'P') {
+              section.classList.add('fade-in');
+              section.classList.add(`delay-${(index % 5 + 2) * 100}`);
+            } else if (section.tagName === 'IMG') {
+              section.classList.add('zoom-in');
+              section.classList.add(`delay-${(index % 5 + 1) * 100}`);
+            }
+            
+            // Observe element
+            testObserver.observe(section);
+          });
+        }, 1000);
+      }
+      
+      // Run the test animation initialization
+      initializeTestAnimations();
+    });
+  </script>
+</body>
+</html>

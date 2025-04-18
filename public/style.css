@@ -1,0 +1,883 @@
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 100%;
+}
+
+header, footer {
+  background-color: #333;
+  color: #fff;
+  padding: 1em;
+}
+
+nav ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+nav ul li {
+  display: inline;
+  margin-right: 1em;
+}
+
+main {
+  padding: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  flex: 1;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+button {
+  margin: 1em;
+  padding: 0.5em 1em;
+  cursor: pointer;
+}
+
+/* Transparent navbar styles */
+.navbar-transparent {
+  background-color: transparent;
+  box-shadow: none;
+  transition: all 0.3s ease-in-out;
+}
+
+.navbar-scrolled {
+  background-color: #111827; /* Dark/black background */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.navbar-transparent .text-gray-600 {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.navbar-transparent .hover\:text-red-600:hover {
+  color: white !important;
+}
+
+.navbar-transparent #site-title {
+  color: white;
+}
+
+.navbar-transparent #mobile-menu-button {
+  color: white;
+}
+
+.navbar-transparent .border-red-600 {
+  border-color: white;
+}
+
+/* Scrolled navbar styles */
+.navbar-scrolled .text-gray-600 {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar-scrolled .hover\:text-red-600:hover {
+  color: #f87171 !important;
+}
+
+.navbar-scrolled #site-title {
+  color: white !important;
+}
+
+.navbar-scrolled .border-red-600 {
+  border-color: #ef4444 !important;
+}
+
+.navbar-scrolled #mobile-menu-button {
+  color: white !important;
+}
+
+/* Add styles for mobile nav */
+#mobile-menu {
+  transition: all 0.3s ease-in-out;
+  max-height: 0;
+  overflow: hidden;
+}
+
+#mobile-menu.hidden {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+#mobile-menu:not(.hidden) {
+  max-height: 300px;
+  border-top: 1px solid #eee;
+}
+
+.navbar-transparent #mobile-menu:not(.hidden) {
+  background-color: rgba(0, 0, 0, 0.8);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navbar-transparent #mobile-menu a {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.navbar-scrolled #mobile-menu:not(.hidden) {
+  background-color: #1f2937; /* Slightly lighter than navbar for contrast */
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navbar-scrolled #mobile-menu a {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+#mobile-menu-button {
+  transition: all 0.2s ease;
+}
+
+#mobile-menu-button:hover {
+  transform: scale(1.1);
+}
+
+/* Menu Page Styles */
+.menu-tab {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.menu-tab:hover {
+  color: #e53e3e;
+}
+
+.active-tab {
+  color: #e53e3e;
+  border-bottom: 2px solid #e53e3e;
+  font-weight: 500;
+}
+
+.menu-section {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Menu Item Styles */
+.menu-section .bg-white {
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.menu-section .bg-white:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f3f4f6;
+}
+
+/* Dietary Icons */
+.fas.fa-leaf, 
+.fas.fa-seedling, 
+.fas.fa-wheat-awn-circle-exclamation, 
+.fas.fa-pepper-hot, 
+.fas.fa-star {
+  transition: transform 0.2s ease;
+}
+
+.fas.fa-leaf:hover, 
+.fas.fa-seedling:hover, 
+.fas.fa-wheat-awn-circle-exclamation:hover, 
+.fas.fa-pepper-hot:hover, 
+.fas.fa-star:hover {
+  transform: scale(1.2);
+}
+
+/* Responsive admin buttons */
+@media (max-width: 640px) {
+  .flex.flex-wrap.justify-end {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  
+  .flex.flex-wrap.justify-end > * {
+    width: auto;
+  }
+  
+  #hero-image-input + i,
+  button i {
+    font-size: 1rem;
+  }
+  
+  /* Mobile Menu Adjustments */
+  .menu-tab {
+    font-size: 0.95rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Menu items on mobile */
+  .menu-section .grid {
+    gap: 1rem;
+  }
+  
+  .menu-section .bg-white {
+    padding: 1rem;
+  }
+}
+
+/* Improve mobile typography */
+@media (max-width: 640px) {
+  #site-title {
+    font-size: 1.5rem;
+  }
+  
+  nav a {
+    font-size: 0.9rem;
+  }
+  
+  .text-5xl {
+    font-size: 2.5rem;
+  }
+  
+  .text-2xl {
+    font-size: 1.25rem;
+  }
+  
+  .rounded-full {
+    border-radius: 1.5rem;
+  }
+}
+
+/* Fix for full-width sections */
+.full-width-hero {
+  width: 100%;
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+/* Hero section specific styles */
+.hero-section {
+  height: 100vh;
+  width: 100%;
+  position: relative;
+}
+
+.hero-section .absolute {
+  width: 100%;
+  left: 0;
+  right: 0;
+}
+
+/* Keep only necessary overflow control on root elements */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Custom Font */
+@font-face {
+  font-family: 'Against';
+  src: url('against.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Apply Against font to all h1 elements */
+h1 {
+  font-family: 'Against', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  font-weight: 300;
+  line-height: 1.2;
+}
+
+.hero-title {
+  font-family: 'Against', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  font-weight: 300;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    white-space: normal;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1250px) {
+  .hero-title {
+    white-space: normal;
+    line-height: 1.1;
+    max-width: 90%;
+    margin: 0 auto;
+  }
+}
+
+/* Apply Hammersmith One font to navbar elements */
+nav a:not(#site-title), 
+nav .text-gray-600,
+#mobile-menu a {
+  font-family: 'Hammersmith One', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+nav a:not(#site-title):hover {
+  transform: translateY(-1px);
+}
+
+/* Ensure site title keeps Against font */
+#site-title {
+  font-family: 'Against', sans-serif;
+  letter-spacing: 2px;
+}
+
+/* Mobile menu appearance */
+#mobile-menu a {
+  font-family: 'Hammersmith One', sans-serif;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+/* Apply Hammersmith One to all h2 headings */
+h2 {
+  font-family: 'Hammersmith One', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* Section-specific h2 styles */
+section h2.text-3xl {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Reservation form h2 */
+.rounded-lg h2 {
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* h2 styles for about page and content areas */
+#content h2 {
+  font-family: 'Hammersmith One', sans-serif;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  font-size: 1.75rem;
+}
+
+/* Header h2 styles */
+header h2 {
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* Footer heading styles */
+footer h3 {
+  font-family: 'Hammersmith One', sans-serif;
+  letter-spacing: 1px;
+}
+
+/* Section height adjustments for desktop */
+@media (min-width: 768px) {
+  /* Our Story section */
+  #about {
+    min-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  /* Chef's Special section */
+  section.py-16.bg-gray-50 {
+    min-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  /* Find Us section */
+  section.py-16.bg-yellow-300 {
+    min-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  /* Make sure content is properly centered */
+  #about .max-w-7xl,
+  section.py-16.bg-gray-50 .max-w-7xl,
+  section.py-16.bg-yellow-300 .max-w-7xl {
+    margin: auto;
+  }
+}
+
+/* Additional rules to ensure proper spacing in Find Us section */
+section.py-16.bg-yellow-300 .grid {
+  height: 100%;
+  align-items: center;
+}
+
+section.py-16.bg-yellow-300 .space-y-4 {
+  margin-bottom: 0;
+}
+
+/* Ensure the yellow section maintains its height */
+section.bg-yellow-300 {
+  min-height: 70vh !important;
+  display: flex;
+  align-items: center;
+}
+
+/* Center the content vertically */
+section.bg-yellow-300 .max-w-7xl {
+  width: 100%;
+}
+
+/* Chef's Special Section Image Formatting */
+section.py-16.bg-gray-50 .grid-cols-1.md\:grid-cols-3 img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensure 8/9 aspect ratio is properly applied */
+section.py-16.bg-gray-50 .grid-cols-1.md\:grid-cols-3 [style*="aspect-ratio: 8/9"] {
+  aspect-ratio: 8/9;
+}
+
+section.py-16.bg-gray-50 .grid-cols-1.md\:grid-cols-3 .text-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Remove rounded corners from the Chef's Special image containers */
+section.py-16.bg-gray-50 .grid-cols-1.md\:grid-cols-3 .overflow-hidden {
+  border-radius: 0;
+}
+
+section.py-16.bg-gray-50 .text-5xl {
+  margin-bottom: 1.5rem;
+}
+
+/* Increase h2 sizes for desktop versions */
+@media (min-width: 768px) {
+  /* Base h2 sizing */
+  h2 {
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+  
+  /* Section specific h2 styling */
+  section h2.text-3xl {
+    font-size: 2.75rem;
+  }
+  
+  /* Bigger bold heading in Chef's Special section */
+  section.py-16.bg-gray-50 .text-5xl {
+    font-size: 3.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  /* Content area h2 headings */
+  #content h2 {
+    font-size: 2.5rem;
+  }
+  
+  /* Reservation form h2 */
+  .rounded-lg h2 {
+    font-size: 2.25rem;
+  }
+  
+  /* Header h2 */
+  header h2 {
+    font-size: 2.75rem;
+  }
+}
+
+/* Our Story section styling for dark theme */
+.story-container img {
+  max-height: 400px;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  height: 300px; /* Set a fixed height for consistency */
+  border-radius: 0; /* Remove rounded corners */
+}
+
+.story-container {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem; /* Match Tailwind gap-8 which is 2rem/32px */
+}
+
+@media (max-width: 768px) {
+  .story-container {
+    display: none; /* Hide the entire container on mobile */
+  }
+  
+  .story-container-button,
+  .text-center.mt-6 {
+    display: none !important; /* Force hide the button and its container on mobile */
+  }
+}
+
+.story-container img:hover {
+  transform: scale(1.02);
+}
+
+.hero-text h2 {
+  font-family: 'Hammersmith One', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Override for the About page to ensure dark theme */
+.bg-black .text-white h2,
+.bg-black .text-white p {
+  color: white !important;
+}
+
+/* Make the about page text more readable on dark background */
+.bg-black .text-xl {
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+/* Enhance the italic text at the end */
+.bg-black .font-bold.italic {
+  color: #f87171;
+  font-size: 1.2em;
+}
+
+/* Ensure full-width display for the About page content */
+#content > div.w-full {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+}
+
+/* About page button styles */
+.story-container-button {
+  padding: 1.3em 5em;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  font-weight: 500;
+  color: #000;
+  background-color: #fff;
+  border: none;
+  border-radius: 45px;
+  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.9s ease 0s;
+  cursor: pointer;
+  outline: none;
+  margin-top: 2rem;
+  display: inline-block;
+}
+
+.story-container-button:hover {
+  background-color: #FDE047;
+  box-shadow: 0px 15px 20px rgba(255, 255, 0, 0.361);
+  color: #fff;
+  transform: translateY(-7px);
+}
+
+.story-container-button:active {
+  transform: translateY(-1px);
+}
+
+/* Remove overflow strip between sections */
+section.py-16.bg-yellow-300 {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+footer {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* Ensure no unwanted spacing between sections */
+section {
+  margin-bottom: 0;
+}
+
+/* Remove any potential gap between sections and footer */
+main {
+  margin-bottom: 0;
+}
+
+/* Ensure content container doesn't add extra space */
+#content {
+  margin-bottom: 0;
+}
+
+/* Remove any potential gap from the last section */
+section:last-of-type {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Additional rules to ensure no gaps */
+.bg-yellow-300 {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Ensure footer sits flush with content */
+footer.bg-gray-900 {
+  margin-top: 0 !important;
+  padding-top: 2rem !important;
+  z-index: 10 !important; /* Ensure lower than admin controls */
+}
+
+/* Remove any potential spacing from the main container */
+main {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Ensure the last section before footer has no bottom spacing */
+main section:last-child {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Force remove any remaining gaps */
+section + footer {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Ensure the yellow section has no bottom spacing */
+section.bg-yellow-300 {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Remove any potential spacing from the content wrapper */
+#content > div {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Testimonial cards styling */
+.flex.flex-col.gap-2.max-w-md.w-full.bg-white {
+  background-color: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Testimonial text colors */
+.flex.flex-col.gap-2.max-w-md.w-full .text-xs {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.flex.flex-col.gap-2.max-w-md.w-full .text-xl.font-bold {
+  color: white !important;
+}
+
+.flex.flex-col.gap-2.max-w-md.w-full .text-sm {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Enhance hover effect */
+.flex.flex-col.gap-2.max-w-md.w-full.bg-white:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  background-color: #242424 !important;
+}
+
+/* Testimonials section background and title */
+section.py-16.bg-white {
+  background-color: white !important;
+}
+
+/* Testimonials section title */
+section.py-16.bg-white h2.text-3xl {
+  color: #1a1a1a !important;
+}
+
+/* Opening Hours & Find Us section */
+.bg-yellow-300 .grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .bg-yellow-300 .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Force the grid columns to be equal width */
+.bg-yellow-300 .grid > div {
+  width: 100%;
+}
+
+/* Add padding between the columns */
+.bg-yellow-300 .grid > div:first-child {
+  padding-right: 1rem;
+}
+
+.bg-yellow-300 .grid > div:last-child {
+  padding-left: 1rem;
+}
+
+/* Remove unwanted gap between yellow section and footer */
+section.py-16.bg-yellow-300 {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+footer.bg-gray-900 {
+  margin-top: 0 !important;
+  padding-top: 2rem !important;
+}
+
+/* Remove any potential gap from main content container */
+.full-width-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Fix admin control panel spacing */
+section.my-8.px-4 {
+  display: none;
+}
+
+body.authenticated section.my-8.px-4 {
+  display: block;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: transparent;
+}
+
+/* Modal layering */
+[id$="-modal"] {
+  z-index: 50 !important;
+}
+
+/* Admin buttons */
+.admin-controls {
+  position: fixed !important;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999 !important;
+}
+
+.admin-controls button,
+.admin-controls label {
+  position: relative;
+  z-index: 9999 !important;
+  background-color: #FBBF24 !important; /* yellow-400 */
+  color: #1F2937 !important; /* gray-800 */
+  transition: all 0.2s ease;
+}
+
+.admin-controls button:hover,
+.admin-controls label:hover {
+  background-color: #F59E0B !important; /* yellow-500 */
+}
+
+/* For the save button to be visually distinct */
+.admin-controls #save-content {
+  background-color: #10B981 !important; /* green-500 */
+  color: white !important;
+}
+
+.admin-controls #save-content:hover {
+  background-color: #059669 !important; /* green-600 */
+}
+
+/* Base website content */
+main, nav, footer {
+  position: relative;
+  z-index: 30;
+}
+
+/* Ensure modals are always on top when visible */
+[id$="-modal"]:not(.hidden) {
+  z-index: 50 !important;
+}
+
+/* Confirmation modals should appear on top of other modals */
+#confirm-delete-modal:not(.hidden) {
+  z-index: 60 !important;
+}
+
+#confirm-delete-modal:not(.hidden) > div > div {
+  z-index: 61 !important;
+}
+
+/* Modal content should be above the overlay */
+[id$="-modal"] > div {
+  position: relative;
+  z-index: 51;
+}
+
+/* Ensure all footers have a lower z-index than admin controls */
+footer {
+  z-index: 10 !important;
+}
+
+/* Icon Centering Fix */
+.flex.items-center .fas,
+.flex.items-center .fa,
+.flex.items-center .far,
+.flex.items-center .fab,
+button.flex.items-center .fas,
+button.flex.items-center .fa,
+button.flex.items-center .far,
+button.flex.items-center .fab {
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Specific fixes for common icon containers */
+.rounded-full.flex.items-center.justify-center > i {
+  line-height: 1;
+  position: relative;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+/* Contact page icons specific fix */
+.bg-yellow-300.rounded-full.flex.items-center.justify-center > i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  width: 16px;
+  font-size: 14px;
+  position: static;
+  margin: 0;
+  padding: 0;
+}
+
+/* Fix for Book Table button */
+.bg-yellow-300.flex.items-center.justify-center > i.fa-calendar-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 14px;
+}

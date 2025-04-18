@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>La Bella Cucina - Home</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="animations.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="preload" href="against.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hammersmith+One&display=swap" rel="stylesheet">
+  <style>
+    html {
+      overflow-x: hidden;
+      width: 100%;
+    }
+    
+    body {
+      overflow-x: hidden;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      position: relative;
+    }
+    
+    .full-width-container {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 full-width-container">
+  <!-- Navigation -->
+  <nav class="bg-white shadow-lg fixed w-full z-50 navbar-transparent">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <!-- Logo -->
+        <a href="index.html" class="text-2xl font-bold text-red-600 hover:text-red-700 transition-colors hero-title" id="site-title">
+          <i class="fas fa-utensils mr-2"></i>La Bella Cucina
+        </a>
+        
+        <!-- Mobile menu button -->
+        <div class="md:hidden">
+          <button id="mobile-menu-button" class="text-gray-600 hover:text-red-600 focus:outline-none">
+            <i class="fas fa-bars text-2xl"></i>
+          </button>
+        </div>
+        
+        <!-- Desktop menu -->
+        <div class="hidden md:flex items-center space-x-6">
+          <a href="index.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors border-b-2 border-red-600">Home</a>
+          <a href="menu.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Menu</a>
+          <a href="contact.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Reservations</a>
+          <a href="about.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">About</a>
+          <a href="reservations-admin.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors" style="display: none;">
+            <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
+          </a>
+          <a href="/logout" id="logout-link" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors hidden">
+            <i class="fas fa-sign-out-alt mr-1"></i>Logout
+          </a>
+        </div>
+      </div>
+      
+      <!-- Mobile menu (hidden by default) -->
+      <div id="mobile-menu" class="md:hidden hidden pt-4 pb-2">
+        <div class="flex flex-col space-y-3">
+          <a href="index.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors font-semibold">Home</a>
+          <a href="menu.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Menu</a>
+          <a href="contact.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Reservations</a>
+          <a href="about.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">About</a>
+          <a href="reservations-admin.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors" style="display: none;">
+            <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
+          </a>
+          <a href="/logout" id="mobile-logout-link" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors hidden">
+            <i class="fas fa-sign-out-alt mr-1"></i>Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="p-0 m-0 w-full">
+    <section id="content" class="m-0 p-0 w-full">
+      <!-- Editable content loaded from data.json -->
+      <div contenteditable="false" class="text-gray-700 w-full"></div>
+    </section>
+    <section class="my-8 px-4 admin-controls" style="position: fixed !important; bottom: 20px; right: 20px; z-index: 9999 !important;">
+      <div class="flex flex-wrap justify-end gap-3 md:gap-4">
+        <button id="edit-toggle" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+          <i class="fas fa-edit mr-2"></i>Edit Content
+        </button>
+        <button id="save-content" style="display:none;" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+          <i class="fas fa-save mr-2"></i>Save
+        </button>
+        <button id="edit-images-button" style="display:none;" class="px-4 sm:px-6 py-3 rounded-full flex items-center text-sm sm:text-base">
+          <i class="fas fa-images mr-2"></i>Edit Images
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-gray-300 py-12">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center md:text-left">
+          <h3 class="text-xl font-bold text-white mb-4">La Bella Cucina</h3>
+          <p class="text-sm">Experience authentic Italian cuisine in a warm and welcoming atmosphere.</p>
+        </div>
+        <div class="text-center">
+          <h3 class="text-xl font-bold text-white mb-4">Quick Links</h3>
+          <ul class="space-y-2">
+            <li><a href="index.html" class="hover:text-white transition-colors">Home</a></li>
+            <li><a href="menu.html" class="hover:text-white transition-colors">Menu</a></li>
+            <li><a href="about.html" class="hover:text-white transition-colors">About</a></li>
+            <li><a href="contact.html" class="hover:text-white transition-colors">Reservations</a></li>
+            <li><a href="/login" id="footer-login-link" class="hover:text-white transition-colors">
+              <i class="fas fa-sign-in-alt mr-1"></i>Login
+            </a></li>
+            <li><a href="/logout" id="footer-logout-link" class="hover:text-white transition-colors hidden">
+              <i class="fas fa-sign-out-alt mr-1"></i>Logout
+            </a></li>
+          </ul>
+        </div>
+        <div class="text-center md:text-right">
+          <h3 class="text-xl font-bold text-white mb-4">Contact Us</h3>
+          <p class="text-sm">123 Main Street, Food City<br>Phone: +1 234 567 89</p>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-gray-800 text-center" id="footer-text"></div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

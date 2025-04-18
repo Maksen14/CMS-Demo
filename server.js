@@ -2,8 +2,6 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const session = require('express-session');
-const RedisStore = require('connect-redis')(session);
-const redis = require('redis');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const crypto = require('crypto');
@@ -148,439 +146,262 @@ const uploadMenuImage = multer({
   }
 }).single('image');
 
-// Initialize Redis client
-let redisClient = null;
-let redisStore = null;
+// Session middleware setup
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'some-fallback-secret-key', // Use env var or fallback
+  resave: false,
+  saveUninitialized: true,
+}));
 
-const initRedisClient = async () => {
-  // If Redis is explicitly disabled, don't try to connect
-  if (process.env.USE_REDIS_STORE === 'false') {
-    console.log('Redis session store is disabled by configuration. Using in-memory store.');
-    return false;
-  }
+// To parse JSON bodies
+app.use(express.json());
+// To parse URL-encoded bodies (for the login form)
+app.use(express.urlencoded({ extended: true }));
 
-  try {
-    console.log('Attempting to connect to Redis...');
-    console.log(`Redis URL: ${process.env.REDIS_URL}`);
-    
-    // Create Redis client with more resilient settings
-    redisClient = redis.createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
-      password: process.env.REDIS_PASSWORD || undefined,
-      username: process.env.REDIS_USERNAME || undefined,
-      legacyMode: true,
-      retry_strategy: function(options) {
-        if (options.error && (options.error.code === 'ECONNREFUSED' || 
-                              options.error.code === 'ENOTFOUND')) {
-          // End reconnecting on a specific error
-          console.error('Redis not available, falling back to memory store');
-          return false;
-        }
-        if (options.attempt > 3) {
-          // End reconnecting after 3 attempts
-          console.error('Maximum Redis reconnection attempts reached');
-          return false;
-        }
-        return Math.min(options.attempt * 1000, 3000);
-      }
-    });
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
-    // Set up event handlers
-    redisClient.on('error', (err) => {
-      console.error('Redis client error:', err.message);
-      // On error, make sure we're not using Redis store
-      redisStore = null;
-    });
-    
-    redisClient.on('connect', () => {
-      console.log('Connected to Redis successfully');
-    });
-    
-    // Attempt connection with timeout
-    let timeoutId;
-    const connectionPromise = redisClient.connect();
-    const timeoutPromise = new Promise((_, reject) => {
-      timeoutId = setTimeout(() => reject(new Error('Redis connection timeout')), 5000);
-    });
-    
-    try {
-      await Promise.race([connectionPromise, timeoutPromise]);
-      clearTimeout(timeoutId);
-      
-      // If we got here, connection was successful
-      redisStore = new RedisStore({ client: redisClient });
-      console.log('Redis store initialized');
-      
-      return true;
-    } catch (innerError) {
-      clearTimeout(timeoutId);
-      throw innerError;
-    }
-  } catch (error) {
-    console.error('Failed to initialize Redis client:', error.message);
-    console.log('Falling back to in-memory session store');
-    
-    // Clean up any partially initialized resources
-    if (redisClient) {
-      try {
-        await redisClient.quit().catch(() => {});
-      } catch (e) {
-        // Ignore quit errors
-      }
-    }
-    
-    redisClient = null;
-    redisStore = null;
-    return false;
-  }
-};
-
-// Try to initialize Redis, but don't wait for it - use a promise with a timeout
-const redisInitPromise = initRedisClient().catch(err => {
-  console.error('Redis initialization error:', err.message);
-  console.log('Application will use in-memory session store');
-  return false;
+/* --------------------------
+   Rate Limiter for Login
+-------------------------- */
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 login attempts per windowMs
+  message: "Too many login attempts from this IP, please try again after 15 minutes."
 });
 
-// Wait for Redis initialization with a timeout
-const redisReadyPromise = Promise.race([
-  redisInitPromise,
-  new Promise(resolve => setTimeout(() => {
-    console.log('Redis initialization timeout, proceeding with server startup');
-    resolve(false);
-  }, 5000))
-]);
+/* --------------------------
+   Authentication Endpoints
+-------------------------- */
 
-// Start the server after Redis initialization attempts
-redisReadyPromise.then(() => {
-  // Session middleware setup with fallback to memory store
-  app.use(session({
-    store: redisStore, // Will be null if Redis is unavailable
-    secret: process.env.SESSION_SECRET || 'some-fallback-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { 
-      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-      maxAge: 1000 * 60 * 60 * 24 // 24 hours
-    }
-  }));
-
-  // To parse JSON bodies
-  app.use(express.json());
-  // To parse URL-encoded bodies (for the login form)
-  app.use(express.urlencoded({ extended: true }));
-
-  // Serve static files from the public directory
-  app.use(express.static(path.join(__dirname, 'public')));
-
-  /* --------------------------
-     Rate Limiter for Login
-  -------------------------- */
-  const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 login attempts per windowMs
-    message: "Too many login attempts from this IP, please try again after 15 minutes."
-  });
-
-  /* --------------------------
-     Authentication Endpoints
-  -------------------------- */
-
-  // Serve the login page with Tailwind styling
-  app.get('/login', (req, res) => {
-      res.send(`<!DOCTYPE html>
-    <html class="h-full bg-white">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Sign in to your account</title>
-      <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="h-full">
-      <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
-        <div class="sm:mx-auto sm:w-full sm:max-w-sm">
-          <img class="mx-auto h-10 w-auto" src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=600" alt="Your Company">
-          <h2 class="mt-10 text-center text-2xl font-bold tracking-tight text-gray-900">Se connecter</h2>
-        </div>
-    
-        <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form class="space-y-6" action="/login" method="POST">
-            <div>
-              <div class="flex items-center justify-between">
-                <label for="password" class="block text-sm font-medium text-gray-900">Password</label>
-                <div class="text-sm">
-                  <a href="#" class="font-semibold text-indigo-600 hover:text-indigo-500">Mot de passe oublié?</a>
-                </div>
-              </div>
-              <div class="mt-2">
-                <input type="password" name="password" id="password" autocomplete="current-password" required class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600">
-              </div>
-            </div>
-    
-            <div>
-              <button type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-indigo-600">Sign in</button>
-            </div>
-          </form>
-    
-          
-        </div>
+// Serve the login page with Tailwind styling
+app.get('/login', (req, res) => {
+    res.send(`<!DOCTYPE html>
+  <html class="h-full bg-white">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in to your account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="h-full">
+    <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
+      <div class="sm:mx-auto sm:w-full sm:max-w-sm">
+        <img class="mx-auto h-10 w-auto" src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=600" alt="Your Company">
+        <h2 class="mt-10 text-center text-2xl font-bold tracking-tight text-gray-900">Se connecter</h2>
       </div>
-    </body>
-    </html>`);
-    });
-  // Process login using rate limiting to prevent brute force attacks
-  app.post('/login', loginLimiter, (req, res) => {
-    const { password } = req.body;
-    if (password === process.env.ADMIN_PASSWORD) {
-      req.session.authenticated = true;
-      res.redirect('/');
-    } else {
-      res.send('Incorrect password. <a href="/login">Try again</a>');
-    }
+  
+      <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+        <form class="space-y-6" action="/login" method="POST">
+          <div>
+            <div class="flex items-center justify-between">
+              <label for="password" class="block text-sm font-medium text-gray-900">Password</label>
+              <div class="text-sm">
+                <a href="#" class="font-semibold text-indigo-600 hover:text-indigo-500">Mot de passe oublié?</a>
+              </div>
+            </div>
+            <div class="mt-2">
+              <input type="password" name="password" id="password" autocomplete="current-password" required class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600">
+            </div>
+          </div>
+  
+          <div>
+            <button type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-indigo-600">Sign in</button>
+          </div>
+        </form>
+  
+        
+      </div>
+    </div>
+  </body>
+  </html>`);
   });
-
-  // Logout endpoint
-  app.get('/logout', (req, res) => {
-    req.session.destroy(() => {
-      res.redirect('/');
-    });
-  });
-
-  // Endpoint to check authentication status
-  app.get('/api/auth-status', (req, res) => {
-    res.json({ authenticated: !!req.session.authenticated });
-  });
-
-  /* --------------------------
-     API Endpoints for Content
-  -------------------------- */
-
-  app.get('/api/content', (req, res) => { let page = req.query.page || 'index'; // Supprimer l'extension .html si présente 
-  page = page.replace('.html', '');
-
-    if (page === 'menu') { 
-      // Pour la page menu, lire le contenu dans menu.json 
-      fs.readFile(menuFile, 'utf8', (err, data) => { if (err) { console.error("Erreur lors de la lecture du fichier menu.json:", err); 
-      return res.status(500).json({ error: 'Erreur lors de la lecture du fichier menu.json' }); } 
-      try { const menuContent = JSON.parse(data); res.json(menuContent); } 
-      catch (parseError) { console.error("Erreur lors du parsing de menu.json:", parseError); 
-        res.status(500).json({ error: 'Erreur lors du parsing du fichier menu.json' }); } }); } 
-        else { 
-          //Pour les autres pages, lire data.json 
-          fs.readFile(dataFile, 'utf8', (err, data) => { if (err) { 
-            console.error('Erreur lors de la lecture du fichier data.json:', err); return res.status(500).json({ error: 'Erreur lors de la lecture du fichier data.json' }); } 
-            try { const content = JSON.parse(data); if (content[page]) { res.json(content[page]); } else { res.status(404).json({ error: 'Page non trouvée' }); } } 
-            catch (parseError) { console.error('Erreur lors du parsing du fichier data.json:', parseError); res.status(500).json({ error: 'Erreur lors du parsing du fichier data.json' }); } }); } });
-
-
-  // Middleware to protect routes that require authentication
-  function ensureAuthenticated(req, res, next) {
-    if (req.session.authenticated) {
-      return next();
-    }
-    res.status(401).json({ error: 'Unauthorized. Please log in.' });
+// Process login using rate limiting to prevent brute force attacks
+app.post('/login', loginLimiter, (req, res) => {
+  const { password } = req.body;
+  if (password === process.env.ADMIN_PASSWORD) {
+    req.session.authenticated = true;
+    res.redirect('/');
+  } else {
+    res.send('Incorrect password. <a href="/login">Try again</a>');
   }
+});
 
-  // Protected endpoint to update content
-  app.post('/api/content', ensureAuthenticated, (req, res) => { let { page, title, content: pageContent, footer, heroImage } = req.body; page = (page || 'index').replace('.html', '');
+// Logout endpoint
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/');
+  });
+});
+
+// Endpoint to check authentication status
+app.get('/api/auth-status', (req, res) => {
+  res.json({ authenticated: !!req.session.authenticated });
+});
+
+/* --------------------------
+   API Endpoints for Content
+-------------------------- */
+
+app.get('/api/content', (req, res) => { let page = req.query.page || 'index'; // Supprimer l'extension .html si présente 
+page = page.replace('.html', '');
 
   if (page === 'menu') { 
-    // Pour la page menu, mise à jour dans menu.json 
-    fs.readFile(menuFile, 'utf8', (err, data) => { if (err) { console.error('Erreur lors de la lecture du fichier menu.json:', err); 
-      return res.status(500).json({ error: 'Erreur lors de la lecture du fichier menu.json' }); }
+    // Pour la page menu, lire le contenu dans menu.json 
+    fs.readFile(menuFile, 'utf8', (err, data) => { if (err) { console.error("Erreur lors de la lecture du fichier menu.json:", err); 
+    return res.status(500).json({ error: 'Erreur lors de la lecture du fichier menu.json' }); } 
+    try { const menuContent = JSON.parse(data); res.json(menuContent); } 
+    catch (parseError) { console.error("Erreur lors du parsing de menu.json:", parseError); 
+      res.status(500).json({ error: 'Erreur lors du parsing du fichier menu.json' }); } }); } 
+      else { 
+        //Pour les autres pages, lire data.json 
+        fs.readFile(dataFile, 'utf8', (err, data) => { if (err) { 
+          console.error('Erreur lors de la lecture du fichier data.json:', err); return res.status(500).json({ error: 'Erreur lors de la lecture du fichier data.json' }); } 
+          try { const content = JSON.parse(data); if (content[page]) { res.json(content[page]); } else { res.status(404).json({ error: 'Page non trouvée' }); } } 
+          catch (parseError) { console.error('Erreur lors du parsing du fichier data.json:', parseError); res.status(500).json({ error: 'Erreur lors du parsing du fichier data.json' }); } }); } });
 
-    let menuData = {};
-    try {
-      menuData = JSON.parse(data);
-    } catch (parseError) {
-      console.error('Erreur lors du parsing du fichier menu.json:', parseError);
-      return res.status(500).json({ error: 'Erreur lors du parsing du fichier menu.json' });
+
+// Middleware to protect routes that require authentication
+function ensureAuthenticated(req, res, next) {
+  if (req.session.authenticated) {
+    return next();
+  }
+  res.status(401).json({ error: 'Unauthorized. Please log in.' });
+}
+
+// Protected endpoint to update content
+app.post('/api/content', ensureAuthenticated, (req, res) => { let { page, title, content: pageContent, footer, heroImage } = req.body; page = (page || 'index').replace('.html', '');
+
+if (page === 'menu') { 
+  // Pour la page menu, mise à jour dans menu.json 
+  fs.readFile(menuFile, 'utf8', (err, data) => { if (err) { console.error('Erreur lors de la lecture du fichier menu.json:', err); 
+    return res.status(500).json({ error: 'Erreur lors de la lecture du fichier menu.json' }); }
+
+  let menuData = {};
+  try {
+    menuData = JSON.parse(data);
+  } catch (parseError) {
+    console.error('Erreur lors du parsing du fichier menu.json:', parseError);
+    return res.status(500).json({ error: 'Erreur lors du parsing du fichier menu.json' });
+  }
+  
+  // Mettez à jour les propriétés souhaitées
+  menuData.title = title || menuData.title || 'Menu';
+  menuData.content = pageContent || menuData.content || '';
+  menuData.footer = footer || menuData.footer || '';
+  // Optionnel : si vous utilisez une image hero sur la page menu, la sauvegarder aussi
+  menuData.heroImage = heroImage || menuData.heroImage || '';
+
+  fs.writeFile(menuFile, JSON.stringify(menuData, null, 2), 'utf8', (err) => {
+    if (err) {
+      console.error('Error writing to menu.json:', err);
+      return res.status(500).json({ error: 'Error writing to menu.json' });
     }
-    
-    // Mettez à jour les propriétés souhaitées
-    menuData.title = title || menuData.title || 'Menu';
-    menuData.content = pageContent || menuData.content || '';
-    menuData.footer = footer || menuData.footer || '';
-    // Optionnel : si vous utilisez une image hero sur la page menu, la sauvegarder aussi
-    menuData.heroImage = heroImage || menuData.heroImage || '';
-
-    fs.writeFile(menuFile, JSON.stringify(menuData, null, 2), 'utf8', (err) => {
-      if (err) {
-        console.error('Error writing to menu.json:', err);
-        return res.status(500).json({ error: 'Error writing to menu.json' });
-      }
-      res.json({ message: 'Menu content updated successfully!' });
-    });
+    res.json({ message: 'Menu content updated successfully!' });
   });
-  } else { 
-    // Pour les autres pages, mise à jour dans data.json (code inchangé) 
-    fs.readFile(dataFile, 'utf8', (err, data) => { if (err) { console.error('Erreur lors de la lecture du fichier data.json:', err); 
-      return res.status(500).json({ error: 'Erreur lors de la lecture du fichier data.json' }); } 
-      let allContent = {}; try { allContent = JSON.parse(data); } catch (parseError) { console.error('Erreur lors du parsing de data.json:', parseError); 
-        return res.status(500).json({ error: 'Erreur lors du parsing du fichier data.json' }); }
+});
+} else { 
+  // Pour les autres pages, mise à jour dans data.json (code inchangé) 
+  fs.readFile(dataFile, 'utf8', (err, data) => { if (err) { console.error('Erreur lors de la lecture du fichier data.json:', err); 
+    return res.status(500).json({ error: 'Erreur lors de la lecture du fichier data.json' }); } 
+    let allContent = {}; try { allContent = JSON.parse(data); } catch (parseError) { console.error('Erreur lors du parsing de data.json:', parseError); 
+      return res.status(500).json({ error: 'Erreur lors du parsing du fichier data.json' }); }
 
 
-    if (!allContent[page]) {
-      allContent[page] = {};
+  if (!allContent[page]) {
+    allContent[page] = {};
+  }
+  
+  allContent[page] = {
+    ...allContent[page],
+    title: title || allContent[page].title || 'Untitled',
+    content: pageContent || allContent[page].content || '',
+    footer: footer || allContent[page].footer || '',
+    heroImage: heroImage || allContent[page].heroImage || ''
+  };
+
+  fs.writeFile(dataFile, JSON.stringify(allContent, null, 2), 'utf8', (err) => {
+    if (err) {
+      console.error('Error writing to data.json:', err);
+      return res.status(500).json({ error: 'Error writing to data.json' });
     }
-    
-    allContent[page] = {
-      ...allContent[page],
-      title: title || allContent[page].title || 'Untitled',
-      content: pageContent || allContent[page].content || '',
-      footer: footer || allContent[page].footer || '',
-      heroImage: heroImage || allContent[page].heroImage || ''
-    };
-
-    fs.writeFile(dataFile, JSON.stringify(allContent, null, 2), 'utf8', (err) => {
-      if (err) {
-        console.error('Error writing to data.json:', err);
-        return res.status(500).json({ error: 'Error writing to data.json' });
-      }
-      res.json({ message: 'Content updated successfully!' });
-    });
-  } });
-
-
-
-
-  // Endpoint to upload hero image
-  app.post('/api/upload-hero', ensureAuthenticated, (req, res) => {
-    uploadHero(req, res, (err) => {
-      if (err) {
-        return res.status(400).json({ error: err.message });
-      }
-      if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
-      }
-
-      const imagePath = `/images/${req.file.filename}`;
-      
-      // Update the hero image path in data.json
-      fs.readFile(dataFile, 'utf8', (err, data) => {
-        if (err) {
-          console.error('Error reading data file:', err);
-          return res.status(500).json({ error: 'Error reading data file' });
-        }
-
-        try {
-          const content = JSON.parse(data);
-          content[req.body.page].heroImage = imagePath;
-
-          fs.writeFile(dataFile, JSON.stringify(content, null, 2), (err) => {
-            if (err) {
-              console.error('Error writing data file:', err);
-              return res.status(500).json({ error: 'Error saving image path' });
-            }
-            res.json({ success: true, imagePath });
-          });
-        } catch (parseError) {
-          console.error('Error parsing data file:', parseError);
-          res.status(500).json({ error: 'Error parsing data file' });
-        }
-      });
-    });
+    res.json({ message: 'Content updated successfully!' });
   });
+});
+} });
 
-  // Endpoint to upload content images
-  app.post('/api/upload-content-images', ensureAuthenticated, (req, res) => {
-    uploadContentImages(req, res, function(err) {
-      if (err instanceof multer.MulterError) {
-        return res.status(400).json({ error: 'File upload error: ' + err.message });
-      } else if (err) {
-        return res.status(400).json({ error: err.message });
+
+
+
+// Endpoint to upload hero image
+app.post('/api/upload-hero', ensureAuthenticated, (req, res) => {
+  uploadHero(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const imagePath = `/images/${req.file.filename}`;
+    
+    // Update the hero image path in data.json
+    fs.readFile(dataFile, 'utf8', (err, data) => {
+      if (err) {
+        console.error('Error reading data file:', err);
+        return res.status(500).json({ error: 'Error reading data file' });
       }
 
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ error: 'No files uploaded' });
-      }
+      try {
+        const content = JSON.parse(data);
+        content[req.body.page].heroImage = imagePath;
 
-      const imagePaths = req.files.map(file => 'images/' + file.filename);
-      let oldImagePath = req.body.oldImagePath;
-      const isHeroImage = req.body.isHeroImage === 'true';
-      
-      if (!oldImagePath) {
-        return res.status(400).json({ error: 'Old image path not provided' });
-      }
-      
-      // Get just the filename part if it's a full path
-      const oldImageFilename = oldImagePath.split('/').pop();
-      
-      console.log('Received old path:', oldImagePath);
-      console.log('Filename extracted:', oldImageFilename);
-      console.log('New image path:', imagePaths[0]);
-      console.log('Is hero image:', isHeroImage);
-      
-      // If it's the hero image, we can handle it directly without searching in content
-      if (isHeroImage) {
-        fs.readFile(dataFile, 'utf8', (err, data) => {
+        fs.writeFile(dataFile, JSON.stringify(content, null, 2), (err) => {
           if (err) {
-            console.error('Error reading content file:', err);
-            return res.status(500).json({ error: 'Error reading content file' });
+            console.error('Error writing data file:', err);
+            return res.status(500).json({ error: 'Error saving image path' });
           }
-          
-          try {
-            const content = JSON.parse(data);
-            // Update the hero image property
-            if (content.index) {
-              content.index.heroImage = imagePaths[0];
-              
-              // Also try to update the src in the content if it exists
-              if (content.index.content) {
-                const safeOldPath = oldImagePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                let regex = new RegExp(`src="${safeOldPath}"`, 'g');
-                
-                // If the content doesn't have the full path, try looking for just the filename
-                if (!content.index.content.includes(oldImagePath) && oldImageFilename) {
-                  console.log('Full path not found for hero, looking for filename in src attributes');
-                  
-                  // Create a regex that looks for the filename in any path
-                  const safeFilename = oldImageFilename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                  regex = new RegExp(`src="[^"]*${safeFilename}"`, 'g');
-                }
-                
-                // Look for the ID of the hero image
-                const heroRegex = new RegExp(`id="hero-image"[^>]*src="[^"]*"`, 'g');
-                
-                // Try different approaches to find and replace the hero image
-                if (content.index.content.match(heroRegex)) {
-                  console.log('Found hero image by ID');
-                  content.index.content = content.index.content.replace(
-                    heroRegex,
-                    match => match.replace(/src="[^"]*"/, `src="${imagePaths[0]}"`)
-                  );
-                } else if (content.index.content.match(regex)) {
-                  console.log('Found hero image by path or filename');
-                  content.index.content = content.index.content.replace(
-                    regex,
-                    `src="${imagePaths[0]}"`
-                  );
-                }
-              }
-              
-              fs.writeFile(dataFile, JSON.stringify(content, null, 2), 'utf8', (err) => {
-                if (err) {
-                  console.error('Error updating content file:', err);
-                  return res.status(500).json({ error: 'Error updating content file' });
-                }
-                console.log('Hero image updated successfully');
-                res.json({ 
-                  message: 'Image uploaded successfully!',
-                  imagePaths: imagePaths
-                });
-              });
-            } else {
-              res.status(500).json({ error: 'Index page not found in content' });
-            }
-          } catch (parseError) {
-            console.error('Error parsing content file:', parseError);
-            res.status(500).json({ error: 'Error parsing content file' });
-          }
+          res.json({ success: true, imagePath });
         });
-        return;
+      } catch (parseError) {
+        console.error('Error parsing data file:', parseError);
+        res.status(500).json({ error: 'Error parsing data file' });
       }
-      
-      // For regular content images:
+    });
+  });
+});
+
+// Endpoint to upload content images
+app.post('/api/upload-content-images', ensureAuthenticated, (req, res) => {
+  uploadContentImages(req, res, function(err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: 'File upload error: ' + err.message });
+    } else if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+
+    const imagePaths = req.files.map(file => 'images/' + file.filename);
+    let oldImagePath = req.body.oldImagePath;
+    const isHeroImage = req.body.isHeroImage === 'true';
+    
+    if (!oldImagePath) {
+      return res.status(400).json({ error: 'Old image path not provided' });
+    }
+    
+    // Get just the filename part if it's a full path
+    const oldImageFilename = oldImagePath.split('/').pop();
+    
+    console.log('Received old path:', oldImagePath);
+    console.log('Filename extracted:', oldImageFilename);
+    console.log('New image path:', imagePaths[0]);
+    console.log('Is hero image:', isHeroImage);
+    
+    // If it's the hero image, we can handle it directly without searching in content
+    if (isHeroImage) {
       fs.readFile(dataFile, 'utf8', (err, data) => {
         if (err) {
           console.error('Error reading content file:', err);
@@ -589,552 +410,202 @@ redisReadyPromise.then(() => {
         
         try {
           const content = JSON.parse(data);
-          let updated = false;
-          
-          // Update the src in the content
-          if (content.index && content.index.content) {
-            // Try both the full path and just the filename
-            const safeOldPath = oldImagePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            let regex = new RegExp(`src="${safeOldPath}"`, 'g');
+          // Update the hero image property
+          if (content.index) {
+            content.index.heroImage = imagePaths[0];
             
-            // Test for full path
-            if (content.index.content.match(regex)) {
-              console.log('Found image by full path');
-            } else if (oldImageFilename) {
+            // Also try to update the src in the content if it exists
+            if (content.index.content) {
+              const safeOldPath = oldImagePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              let regex = new RegExp(`src="${safeOldPath}"`, 'g');
+              
               // If the content doesn't have the full path, try looking for just the filename
-              console.log('Full path not found, looking for filename in src attributes');
-              
-              // Create a regex that looks for the filename in any path
-              const safeFilename = oldImageFilename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-              regex = new RegExp(`src="[^"]*${safeFilename}"`, 'g');
-              
-              if (content.index.content.match(regex)) {
-                console.log('Found image by filename');
-              } else {
-                // If we can't find by filename either, let's try a more lenient approach:
-                // Find an img tag with alt text or similar characteristics
-                const altText = req.body.altText;
-                if (altText) {
-                  console.log('Trying to find by alt text:', altText);
-                  const safeAltText = altText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                  regex = new RegExp(`<img[^>]*alt="${safeAltText}"[^>]*>`, 'g');
-                  
-                  if (content.index.content.match(regex)) {
-                    console.log('Found image by alt text');
-                    // Replace the src in this img tag
-                    content.index.content = content.index.content.replace(
-                      regex,
-                      match => match.replace(/src="[^"]*"/, `src="${imagePaths[0]}"`)
-                    );
-                    updated = true;
-                  }
-                }
+              if (!content.index.content.includes(oldImagePath) && oldImageFilename) {
+                console.log('Full path not found for hero, looking for filename in src attributes');
                 
-                // If still not found and we're replacing in edit mode, just accept the upload
-                if (!updated && req.body.forceUpdate === 'true') {
-                  console.log('Force update requested, accepting the upload without content modification');
-                  updated = true;
-                } else if (!updated) {
-                  console.error('Image not found in content by any method');
-                  return res.status(400).json({ 
-                    error: 'Image not found in content. Please try another image or refresh the page.'
-                  });
-                }
+                // Create a regex that looks for the filename in any path
+                const safeFilename = oldImageFilename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                regex = new RegExp(`src="[^"]*${safeFilename}"`, 'g');
+              }
+              
+              // Look for the ID of the hero image
+              const heroRegex = new RegExp(`id="hero-image"[^>]*src="[^"]*"`, 'g');
+              
+              // Try different approaches to find and replace the hero image
+              if (content.index.content.match(heroRegex)) {
+                console.log('Found hero image by ID');
+                content.index.content = content.index.content.replace(
+                  heroRegex,
+                  match => match.replace(/src="[^"]*"/, `src="${imagePaths[0]}"`)
+                );
+              } else if (content.index.content.match(regex)) {
+                console.log('Found hero image by path or filename');
+                content.index.content = content.index.content.replace(
+                  regex,
+                  `src="${imagePaths[0]}"`
+                );
               }
             }
             
-            // If we made it here and haven't found anything, let's accept the upload anyway
-            // This ensures better compatibility with different content structures
-            if (!updated) {
-              // Replace the old image path with the new one in the content
-              const newContent = content.index.content.replace(
-                regex,
-                `src="${imagePaths[0]}"`
-              );
-              
-              // Only update if something actually changed
-              if (newContent !== content.index.content) {
-                content.index.content = newContent;
-                updated = true;
-              } else {
-                console.log('No changes made to content, but accepting upload');
-                updated = true; // Accept the upload anyway
-              }
-            }
-          }
-          
-          // Save the updated content back to data.json
-          if (updated) {
             fs.writeFile(dataFile, JSON.stringify(content, null, 2), 'utf8', (err) => {
               if (err) {
                 console.error('Error updating content file:', err);
                 return res.status(500).json({ error: 'Error updating content file' });
               }
-              console.log('Content updated successfully with new image');
+              console.log('Hero image updated successfully');
               res.json({ 
                 message: 'Image uploaded successfully!',
                 imagePaths: imagePaths
               });
             });
           } else {
-            console.error('No content was updated');
-            res.status(500).json({ error: 'No content was updated' });
+            res.status(500).json({ error: 'Index page not found in content' });
           }
         } catch (parseError) {
           console.error('Error parsing content file:', parseError);
           res.status(500).json({ error: 'Error parsing content file' });
         }
       });
-    });
-  });
-
-  // Endpoint to add a new dish
-  app.post('/api/menu-dish', ensureAuthenticated, (req, res) => {
-    upload.single('image')(req, res, function(err) {
-      if (err instanceof multer.MulterError) {
-        return res.status(400).json({ error: 'File upload error: ' + err.message });
-      } else if (err) {
-        return res.status(400).json({ error: err.message });
-      }
-
-      const { name, price, description, category } = req.body;
-      let dietary = [];
-      
-      try {
-        if (req.body.dietary) {
-          dietary = JSON.parse(req.body.dietary);
-        }
-      } catch (error) {
-        console.error('Error parsing dietary options:', error);
-      }
-
-      if (!name || !price || !description || !category) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-
-      // Generate a unique ID for the dish
-      const dishId = crypto.randomUUID();
-      
-      // Get image path if uploaded
-      const imagePath = req.file ? 'images/' + req.file.filename : 'images/placeholder-dish.png';
-
-      fs.readFile(dataFile, 'utf8', (err, data) => {
-        if (err) {
-          console.error('Error reading data file:', err);
-          return res.status(500).json({ error: 'Error reading data file' });
-        }
-
-        try {
-          const allContent = JSON.parse(data);
-          
-          if (!allContent.menu) {
-            allContent.menu = {
-              title: 'Our Menu',
-              content: '',
-              footer: '© 2025 La Bella Cucina. All rights reserved.'
-            };
-          }
-
-          // Create HTML for the new dish
-          const dietaryIcons = {
-            'vegetarian': '<span class="text-green-600"><i class="fas fa-leaf" title="Vegetarian"></i></span>',
-            'vegan': '<span class="text-green-700"><i class="fas fa-seedling" title="Vegan"></i></span>',
-            'gluten-free': '<span class="text-yellow-600"><i class="fas fa-wheat-awn-circle-exclamation" title="Gluten-Free"></i></span>',
-            'spicy': '<span class="text-red-500"><i class="fas fa-pepper-hot" title="Spicy"></i></span>',
-            'chefs-special': '<span class="text-blue-500"><i class="fas fa-star" title="Chef\'s Special"></i></span>'
-          };
-
-          let dietaryHTML = '';
-          dietary.forEach(option => {
-            if (dietaryIcons[option]) {
-              dietaryHTML += ' ' + dietaryIcons[option];
-            }
-          });
-
-          // Parse existing content or create new structure
-          let menuContent = '';
-          
-          if (allContent.menu.content) {
-            menuContent = allContent.menu.content;
-          } else {
-            // Create basic menu structure if it doesn't exist
-            menuContent = `<div class="space-y-12">
-              <section class="mb-8">
-                <h2 class="text-3xl font-bold text-gray-800 mb-4">Our Culinary Experience</h2>
-                <p class="text-gray-600 leading-relaxed">Discover our carefully crafted menu featuring authentic Italian cuisine made with the freshest ingredients and traditional recipes passed down through generations.</p>
-              </section>
-              <section class="space-y-10">
-                <div id="starters">
-                  <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">Starters</h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-                </div>
-                <div id="mains">
-                  <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">Main Courses</h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-                </div>
-                <div id="pasta">
-                  <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">Pasta & Risotto</h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-                </div>
-                <div id="desserts">
-                  <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">Desserts</h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-                </div>
-                <div id="drinks">
-                  <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">Drinks</h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-                </div>
-              </section>
-            </div>`;
-          }
-
-          // Create new dish HTML
-          const newDishHTML = `
-            <div class="bg-white p-5 rounded-lg shadow-md menu-item">
-              <div class="flex justify-between items-start mb-2">
-                <h4 class="text-xl font-semibold" data-dish-id="${dishId}">${name} ${dietaryHTML}</h4>
-                <span class="text-red-600 font-medium">€${price}</span>
-              </div>
-              <p class="text-gray-600 mb-2">${description}</p>
-              <div class="relative">
-                <img src="${imagePath}" alt="${name}" class="w-full h-40 object-cover rounded-md">
-                <button class="delete-dish-btn absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700" data-dish-id="${dishId}">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </div>
-            </div>
-          `;
-
-          // Insert the new dish into the appropriate category
-          const categoryId = category || 'starters';
-          const categoryRegex = new RegExp(`<div id="${categoryId}">[\\s\\S]*?<div class="grid grid-cols-1 md:grid-cols-2 gap-6">([\\s\\S]*?)<\\/div>`, 'i');
-          
-          const match = menuContent.match(categoryRegex);
-          if (match) {
-            // Insert dish at the beginning of the grid
-            menuContent = menuContent.replace(
-              `<div id="${categoryId}">`,
-              `<div id="${categoryId}">`
-            ).replace(
-              `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">`,
-              `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">${newDishHTML}`
-            );
-          } else {
-            console.error(`Category ${categoryId} not found in menu content`);
-            return res.status(400).json({ error: `Category ${categoryId} not found in menu content` });
-          }
-
-          // Update menu content
-          allContent.menu.content = menuContent;
-
-          // Save the updated content back to the file
-          fs.writeFile(dataFile, JSON.stringify(allContent, null, 2), 'utf8', (err) => {
-            if (err) {
-              console.error('Error writing data file:', err);
-              return res.status(500).json({ error: 'Error writing data file' });
-            }
-            res.json({ 
-              message: 'Dish added successfully',
-              dishId: dishId,
-              imagePath: imagePath
-            });
-          });
-        } catch (parseError) {
-          console.error('Error parsing data file:', parseError);
-          res.status(500).json({ error: 'Error parsing data file' });
-        }
-      });
-    });
-  });
-
-  // Endpoint to delete a dish
-  app.delete('/api/menu-dish', ensureAuthenticated, (req, res) => {
-    const { dishId } = req.body;
-    
-    if (!dishId) {
-      return res.status(400).json({ error: 'Missing dish ID' });
+      return;
     }
-
+    
+    // For regular content images:
     fs.readFile(dataFile, 'utf8', (err, data) => {
       if (err) {
-        console.error('Error reading data file:', err);
-        return res.status(500).json({ error: 'Error reading data file' });
+        console.error('Error reading content file:', err);
+        return res.status(500).json({ error: 'Error reading content file' });
       }
-
-      try {
-        const allContent = JSON.parse(data);
-        
-        if (!allContent.menu || !allContent.menu.content) {
-          return res.status(404).json({ error: 'Menu content not found' });
-        }
-
-        // Find and remove the dish with the given ID
-        const dishRegex = new RegExp(`<div class="bg-white p-5 rounded-lg shadow-md menu-item">[\\s\\S]*?data-dish-id="${dishId}"[\\s\\S]*?<\\/div>\\s*<\\/div>`, 'g');
-        
-        const newContent = allContent.menu.content.replace(dishRegex, '');
-        
-        if (newContent === allContent.menu.content) {
-          return res.status(404).json({ error: 'Dish not found' });
-        }
-
-        allContent.menu.content = newContent;
-
-        // Save the updated content back to the file
-        fs.writeFile(dataFile, JSON.stringify(allContent, null, 2), 'utf8', (err) => {
-          if (err) {
-            console.error('Error writing data file:', err);
-            return res.status(500).json({ error: 'Error writing data file' });
-          }
-          res.json({ message: 'Dish deleted successfully' });
-        });
-      } catch (parseError) {
-        console.error('Error parsing data file:', parseError);
-        res.status(500).json({ error: 'Error parsing data file' });
-      }
-    });
-  });
-
-  // Endpoint to update an existing dish
-  app.post('/api/update-dish', ensureAuthenticated, (req, res) => {
-    upload.single('image')(req, res, function(err) {
-      if (err instanceof multer.MulterError) {
-        return res.status(400).json({ error: 'File upload error: ' + err.message });
-      } else if (err) {
-        return res.status(400).json({ error: err.message });
-      }
-
-      const { dishId, name, price, description, category } = req.body;
-      let dietary = [];
       
       try {
-        if (req.body.dietary) {
-          dietary = JSON.parse(req.body.dietary);
-        }
-      } catch (error) {
-        console.error('Error parsing dietary options:', error);
-      }
-
-      if (!dishId || !name || !price || !category) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-
-      // Get image path if uploaded
-      const hasNewImage = !!req.file;
-      const newImagePath = hasNewImage ? 'images/' + req.file.filename : '';
-
-      fs.readFile(dataFile, 'utf8', (err, data) => {
-        if (err) {
-          console.error('Error reading data file:', err);
-          return res.status(500).json({ error: 'Error reading data file' });
-        }
-
-        try {
-          const allContent = JSON.parse(data);
+        const content = JSON.parse(data);
+        let updated = false;
+        
+        // Update the src in the content
+        if (content.index && content.index.content) {
+          // Try both the full path and just the filename
+          const safeOldPath = oldImagePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          let regex = new RegExp(`src="${safeOldPath}"`, 'g');
           
-          if (!allContent.menu || !allContent.menu.content) {
-            return res.status(404).json({ error: 'Menu content not found' });
-          }
-
-          // Create temporary DOM to find and update the dish
-          let updatedContent = allContent.menu.content;
-          
-          // Find dish by ID and replace its content
-          const dishRegex = new RegExp(`<div class="bg-white p-5 rounded-lg shadow-md menu-item">[\\s\\S]*?data-dish-id="${dishId}"[\\s\\S]*?<\\/div>\\s*<\\/div>`, 'g');
-          const dishMatch = dishRegex.exec(updatedContent);
-          
-          if (!dishMatch) {
-            return res.status(404).json({ error: 'Dish not found' });
-          }
-          
-          // Get existing dish HTML to extract image path if no new image was provided
-          const existingDishHTML = dishMatch[0];
-          let imagePath = newImagePath;
-          
-          if (!hasNewImage) {
-            // Extract existing image path if no new image
-            const imgSrcRegex = /<img src="([^"]+)" alt="/;
-            const imgMatch = existingDishHTML.match(imgSrcRegex);
-            imagePath = imgMatch && imgMatch[1] ? imgMatch[1] : 'images/placeholder-dish.png';
-          }
-
-          // Create dietary icons HTML
-          const dietaryIcons = {
-            'vegetarian': '<span class="text-green-600"><i class="fas fa-leaf" title="Vegetarian"></i></span>',
-            'vegan': '<span class="text-green-700"><i class="fas fa-seedling" title="Vegan"></i></span>',
-            'gluten-free': '<span class="text-yellow-600"><i class="fas fa-wheat-awn-circle-exclamation" title="Gluten-Free"></i></span>',
-            'spicy': '<span class="text-red-500"><i class="fas fa-pepper-hot" title="Spicy"></i></span>',
-            'chefs-special': '<span class="text-blue-500"><i class="fas fa-star" title="Chef\'s Special"></i></span>'
-          };
-
-          let dietaryHTML = '';
-          dietary.forEach(option => {
-            if (dietaryIcons[option]) {
-              dietaryHTML += ' ' + dietaryIcons[option];
+          // Test for full path
+          if (content.index.content.match(regex)) {
+            console.log('Found image by full path');
+          } else if (oldImageFilename) {
+            // If the content doesn't have the full path, try looking for just the filename
+            console.log('Full path not found, looking for filename in src attributes');
+            
+            // Create a regex that looks for the filename in any path
+            const safeFilename = oldImageFilename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            regex = new RegExp(`src="[^"]*${safeFilename}"`, 'g');
+            
+            if (content.index.content.match(regex)) {
+              console.log('Found image by filename');
+            } else {
+              // If we can't find by filename either, let's try a more lenient approach:
+              // Find an img tag with alt text or similar characteristics
+              const altText = req.body.altText;
+              if (altText) {
+                console.log('Trying to find by alt text:', altText);
+                const safeAltText = altText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                regex = new RegExp(`<img[^>]*alt="${safeAltText}"[^>]*>`, 'g');
+                
+                if (content.index.content.match(regex)) {
+                  console.log('Found image by alt text');
+                  // Replace the src in this img tag
+                  content.index.content = content.index.content.replace(
+                    regex,
+                    match => match.replace(/src="[^"]*"/, `src="${imagePaths[0]}"`)
+                  );
+                  updated = true;
+                }
+              }
+              
+              // If still not found and we're replacing in edit mode, just accept the upload
+              if (!updated && req.body.forceUpdate === 'true') {
+                console.log('Force update requested, accepting the upload without content modification');
+                updated = true;
+              } else if (!updated) {
+                console.error('Image not found in content by any method');
+                return res.status(400).json({ 
+                  error: 'Image not found in content. Please try another image or refresh the page.'
+                });
+              }
             }
-          });
-
-          // Create updated dish HTML
-          const updatedDishHTML = `
-            <div class="bg-white p-5 rounded-lg shadow-md menu-item">
-              <div class="flex justify-between items-start mb-2">
-                <h4 class="text-xl font-semibold" data-dish-id="${dishId}">${name} ${dietaryHTML}</h4>
-                <span class="text-red-600 font-medium">€${price}</span>
-              </div>
-              <p class="text-gray-600 mb-2">${description}</p>
-              <div class="relative">
-                <img src="${imagePath}" alt="${name}" class="w-full h-40 object-cover rounded-md">
-                <button class="delete-dish-btn absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700" data-dish-id="${dishId}">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </div>
-            </div>
-          `;
-
-          // First - if category changed, remove from old category
-          updatedContent = updatedContent.replace(dishRegex, '');
+          }
           
-          // Then add to new category
-          const categoryId = category;
-          const categoryRegex = new RegExp(`<div id="${categoryId}">[\\s\\S]*?<div class="grid grid-cols-1 md:grid-cols-2 gap-6">([\\s\\S]*?)<\\/div>`, 'i');
-          
-          const categoryMatch = categoryRegex.exec(updatedContent);
-          if (categoryMatch) {
-            // Insert dish at the beginning of the grid
-            updatedContent = updatedContent.replace(
-              `<div id="${categoryId}">`,
-              `<div id="${categoryId}">`
-            ).replace(
-              `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">`,
-              `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">${updatedDishHTML}`
+          // If we made it here and haven't found anything, let's accept the upload anyway
+          // This ensures better compatibility with different content structures
+          if (!updated) {
+            // Replace the old image path with the new one in the content
+            const newContent = content.index.content.replace(
+              regex,
+              `src="${imagePaths[0]}"`
             );
-          } else {
-            console.error(`Category ${categoryId} not found in menu content`);
-            return res.status(400).json({ error: `Category ${categoryId} not found in menu content` });
-          }
-
-          // Update menu content
-          allContent.menu.content = updatedContent;
-
-          // Save the updated content back to the file
-          fs.writeFile(dataFile, JSON.stringify(allContent, null, 2), 'utf8', (err) => {
-            if (err) {
-              console.error('Error writing data file:', err);
-              return res.status(500).json({ error: 'Error writing data file' });
+            
+            // Only update if something actually changed
+            if (newContent !== content.index.content) {
+              content.index.content = newContent;
+              updated = true;
+            } else {
+              console.log('No changes made to content, but accepting upload');
+              updated = true; // Accept the upload anyway
             }
+          }
+        }
+        
+        // Save the updated content back to data.json
+        if (updated) {
+          fs.writeFile(dataFile, JSON.stringify(content, null, 2), 'utf8', (err) => {
+            if (err) {
+              console.error('Error updating content file:', err);
+              return res.status(500).json({ error: 'Error updating content file' });
+            }
+            console.log('Content updated successfully with new image');
             res.json({ 
-              message: 'Dish updated successfully',
-              dishId: dishId,
-              imagePath: imagePath
+              message: 'Image uploaded successfully!',
+              imagePaths: imagePaths
             });
           });
-        } catch (parseError) {
-          console.error('Error parsing data file:', parseError);
-          res.status(500).json({ error: 'Error parsing data file' });
+        } else {
+          console.error('No content was updated');
+          res.status(500).json({ error: 'No content was updated' });
         }
-      });
-    });
-  });
-
-  // Endpoint to save dish order and categories
-  app.post('/api/save-dish-order', ensureAuthenticated, (req, res) => {
-    const { dishes } = req.body;
-    
-    if (!dishes || !Array.isArray(dishes) || dishes.length === 0) {
-      return res.status(400).json({ error: 'Invalid dishes data' });
-    }
-
-    fs.readFile(dataFile, 'utf8', (err, data) => {
-      if (err) {
-        console.error('Error reading data file:', err);
-        return res.status(500).json({ error: 'Error reading data file' });
-      }
-
-      try {
-        const allContent = JSON.parse(data);
-        
-        if (!allContent.menu || !allContent.menu.content) {
-          return res.status(404).json({ error: 'Menu content not found' });
-        }
-
-        // Extract all dishes from the menu content using JSDOM
-        const dom = new JSDOM(allContent.menu.content);
-        const tempDiv = dom.window.document.createElement('div');
-        tempDiv.innerHTML = allContent.menu.content;
-        
-        // Group dishes by category
-        const dishesByCategory = {};
-        dishes.forEach(dish => {
-          if (!dishesByCategory[dish.category]) {
-            dishesByCategory[dish.category] = [];
-          }
-          dishesByCategory[dish.category].push(dish);
-        });
-        
-        // Sort dishes within each category
-        Object.keys(dishesByCategory).forEach(category => {
-          dishesByCategory[category].sort((a, b) => a.order - b.order);
-        });
-        
-        // Create a map of dish IDs to HTML
-        const dishMap = {};
-        const dishElements = dom.window.document.querySelectorAll('.menu-item');
-        
-        dishElements.forEach(element => {
-          const nameElement = element.querySelector('[data-dish-id]');
-          if (nameElement) {
-            const id = nameElement.getAttribute('data-dish-id');
-            dishMap[id] = element.outerHTML;
-          }
-        });
-        
-        // Clear all existing dishes from categories
-        let updatedContent = allContent.menu.content;
-        Object.keys(dishesByCategory).forEach(categoryId => {
-          const categoryRegex = new RegExp(`(<div id="${categoryId}">[\\s\\S]*?<div class="grid grid-cols-1 md:grid-cols-2 gap-6">)[\\s\\S]*?(<\\/div>)`, 'i');
-          updatedContent = updatedContent.replace(categoryRegex, '$1$2');
-        });
-        
-        // Insert dishes in their new order for each category
-        Object.keys(dishesByCategory).forEach(categoryId => {
-          let categoryContent = '';
-          
-          dishesByCategory[categoryId].forEach(dish => {
-            if (dishMap[dish.dishId]) {
-              categoryContent += dishMap[dish.dishId];
-            }
-          });
-          
-          if (categoryContent) {
-            const categoryRegex = new RegExp(`(<div id="${categoryId}">[\\s\\S]*?<div class="grid grid-cols-1 md:grid-cols-2 gap-6">)([\\s\\S]*?)(<\\/div>)`, 'i');
-            updatedContent = updatedContent.replace(categoryRegex, `$1${categoryContent}$3`);
-          }
-        });
-        
-        // Update menu content
-        allContent.menu.content = updatedContent;
-        
-        // Save the updated content back to the file
-        fs.writeFile(dataFile, JSON.stringify(allContent, null, 2), 'utf8', (err) => {
-          if (err) {
-            console.error('Error writing data file:', err);
-            return res.status(500).json({ error: 'Error writing data file' });
-          }
-          res.json({ message: 'Dish order saved successfully' });
-        });
       } catch (parseError) {
-        console.error('Error parsing data file:', parseError);
-        res.status(500).json({ error: 'Error parsing data file' });
+        console.error('Error parsing content file:', parseError);
+        res.status(500).json({ error: 'Error parsing content file' });
       }
     });
   });
+});
 
-  // Endpoint to manage menu categories
-  app.post('/api/menu-categories', ensureAuthenticated, (req, res) => {
-    const { categories } = req.body;
-    
-    if (!categories || !Array.isArray(categories) || categories.length === 0) {
-      return res.status(400).json({ error: 'Invalid categories data' });
+// Endpoint to add a new dish
+app.post('/api/menu-dish', ensureAuthenticated, (req, res) => {
+  upload.single('image')(req, res, function(err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: 'File upload error: ' + err.message });
+    } else if (err) {
+      return res.status(400).json({ error: err.message });
     }
+
+    const { name, price, description, category } = req.body;
+    let dietary = [];
+    
+    try {
+      if (req.body.dietary) {
+        dietary = JSON.parse(req.body.dietary);
+      }
+    } catch (error) {
+      console.error('Error parsing dietary options:', error);
+    }
+
+    if (!name || !price || !description || !category) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Generate a unique ID for the dish
+    const dishId = crypto.randomUUID();
+    
+    // Get image path if uploaded
+    const imagePath = req.file ? 'images/' + req.file.filename : 'images/placeholder-dish.png';
 
     fs.readFile(dataFile, 'utf8', (err, data) => {
       if (err) {
@@ -1153,67 +624,94 @@ redisReadyPromise.then(() => {
           };
         }
 
-        // Store existing dishes by category to preserve them
-        const existingDishes = {};
-        
-        // Use simple string parsing instead of DOM manipulation
-        if (allContent.menu.content) {
-          const content = allContent.menu.content;
-          
-          // Find all category sections using regex
-          const categoryRegex = /<div id="([^"]+)">[^<]*<h3[^>]*>([^<]+)<\/h3>[^<]*<div class="grid[^>]*>([^<]*(?:<(?!\/div)[^<]*)*)<\/div>/g;
-          let match;
-          
-          while ((match = categoryRegex.exec(content)) !== null) {
-            const categoryId = match[1];
-            const gridContent = match[3] || '';
-            existingDishes[categoryId] = gridContent;
-          }
-        }
+        // Create HTML for the new dish
+        const dietaryIcons = {
+          'vegetarian': '<span class="text-green-600"><i class="fas fa-leaf" title="Vegetarian"></i></span>',
+          'vegan': '<span class="text-green-700"><i class="fas fa-seedling" title="Vegan"></i></span>',
+          'gluten-free': '<span class="text-yellow-600"><i class="fas fa-wheat-awn-circle-exclamation" title="Gluten-Free"></i></span>',
+          'spicy': '<span class="text-red-500"><i class="fas fa-pepper-hot" title="Spicy"></i></span>',
+          'chefs-special': '<span class="text-blue-500"><i class="fas fa-star" title="Chef\'s Special"></i></span>'
+        };
 
-        // Create new menu structure with the provided categories
-        let menuContent = `<div class="space-y-12">
-          <section class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-800 mb-4">Our Culinary Experience</h2>
-            <p class="text-gray-600 leading-relaxed">Discover our carefully crafted menu featuring authentic Italian cuisine made with the freshest ingredients and traditional recipes passed down through generations.</p>
-          </section>
-          <section class="space-y-10">`;
-
-        // Add each category
-        categories.forEach(category => {
-          // Create a valid ID from the category name - only lowercase letters and numbers, replace spaces with dashes
-          const categoryId = category.toLowerCase()
-            .replace(/\s+/g, '-')         // Replace spaces with dashes
-            .replace(/[^a-z0-9-]/g, '')   // Remove any characters that aren't lowercase letters, numbers, or dashes
-            .replace(/-+/g, '-');         // Replace multiple consecutive dashes with a single dash
-          
-          // Get existing dishes for this category or for similar categories
-          let dishesHTML = '';
-          
-          // First try exact match
-          if (existingDishes[categoryId]) {
-            dishesHTML = existingDishes[categoryId];
-          } else {
-            // Try to match with similar categories (e.g., "Starters" → "starter")
-            const similarCategoryKey = Object.keys(existingDishes).find(key => 
-              key.includes(categoryId) || categoryId.includes(key)
-            );
-            
-            if (similarCategoryKey) {
-              dishesHTML = existingDishes[similarCategoryKey];
-            }
+        let dietaryHTML = '';
+        dietary.forEach(option => {
+          if (dietaryIcons[option]) {
+            dietaryHTML += ' ' + dietaryIcons[option];
           }
-          
-          menuContent += `
-            <div id="${categoryId}">
-              <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">${category}</h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">${dishesHTML}</div>
-            </div>`;
         });
 
-        menuContent += `
-          </section>
-        </div>`;
+        // Parse existing content or create new structure
+        let menuContent = '';
+        
+        if (allContent.menu.content) {
+          menuContent = allContent.menu.content;
+        } else {
+          // Create basic menu structure if it doesn't exist
+          menuContent = `<div class="space-y-12">
+            <section class="mb-8">
+              <h2 class="text-3xl font-bold text-gray-800 mb-4">Our Culinary Experience</h2>
+              <p class="text-gray-600 leading-relaxed">Discover our carefully crafted menu featuring authentic Italian cuisine made with the freshest ingredients and traditional recipes passed down through generations.</p>
+            </section>
+            <section class="space-y-10">
+              <div id="starters">
+                <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">Starters</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+              </div>
+              <div id="mains">
+                <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">Main Courses</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+              </div>
+              <div id="pasta">
+                <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">Pasta & Risotto</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+              </div>
+              <div id="desserts">
+                <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">Desserts</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+              </div>
+              <div id="drinks">
+                <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">Drinks</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+              </div>
+            </section>
+          </div>`;
+        }
+
+        // Create new dish HTML
+        const newDishHTML = `
+          <div class="bg-white p-5 rounded-lg shadow-md menu-item">
+            <div class="flex justify-between items-start mb-2">
+              <h4 class="text-xl font-semibold" data-dish-id="${dishId}">${name} ${dietaryHTML}</h4>
+              <span class="text-red-600 font-medium">€${price}</span>
+            </div>
+            <p class="text-gray-600 mb-2">${description}</p>
+            <div class="relative">
+              <img src="${imagePath}" alt="${name}" class="w-full h-40 object-cover rounded-md">
+              <button class="delete-dish-btn absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700" data-dish-id="${dishId}">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </div>
+        `;
+
+        // Insert the new dish into the appropriate category
+        const categoryId = category || 'starters';
+        const categoryRegex = new RegExp(`<div id="${categoryId}">[\\s\\S]*?<div class="grid grid-cols-1 md:grid-cols-2 gap-6">([\\s\\S]*?)<\\/div>`, 'i');
+        
+        const match = menuContent.match(categoryRegex);
+        if (match) {
+          // Insert dish at the beginning of the grid
+          menuContent = menuContent.replace(
+            `<div id="${categoryId}">`,
+            `<div id="${categoryId}">`
+          ).replace(
+            `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">`,
+            `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">${newDishHTML}`
+          );
+        } else {
+          console.error(`Category ${categoryId} not found in menu content`);
+          return res.status(400).json({ error: `Category ${categoryId} not found in menu content` });
+        }
 
         // Update menu content
         allContent.menu.content = menuContent;
@@ -1224,7 +722,11 @@ redisReadyPromise.then(() => {
             console.error('Error writing data file:', err);
             return res.status(500).json({ error: 'Error writing data file' });
           }
-          res.json({ message: 'Menu categories updated successfully' });
+          res.json({ 
+            message: 'Dish added successfully',
+            dishId: dishId,
+            imagePath: imagePath
+          });
         });
       } catch (parseError) {
         console.error('Error parsing data file:', parseError);
@@ -1232,55 +734,394 @@ redisReadyPromise.then(() => {
       }
     });
   });
+});
 
-  // Endpoint to handle reservations
-  app.post('/api/reservation', (req, res) => {
-    const { name, email, date, time, guests, phone, message } = req.body;
-    
-    // Basic validation
-    if (!name || !email || !date || !time || !guests || !phone) {
-      return res.status(400).json({ error: 'All fields are required except for special requests' });
+// Endpoint to delete a dish
+app.delete('/api/menu-dish', ensureAuthenticated, (req, res) => {
+  const { dishId } = req.body;
+  
+  if (!dishId) {
+    return res.status(400).json({ error: 'Missing dish ID' });
+  }
+
+  fs.readFile(dataFile, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading data file:', err);
+      return res.status(500).json({ error: 'Error reading data file' });
     }
+
+    try {
+      const allContent = JSON.parse(data);
+      
+      if (!allContent.menu || !allContent.menu.content) {
+        return res.status(404).json({ error: 'Menu content not found' });
+      }
+
+      // Find and remove the dish with the given ID
+      const dishRegex = new RegExp(`<div class="bg-white p-5 rounded-lg shadow-md menu-item">[\\s\\S]*?data-dish-id="${dishId}"[\\s\\S]*?<\\/div>\\s*<\\/div>`, 'g');
+      
+      const newContent = allContent.menu.content.replace(dishRegex, '');
+      
+      if (newContent === allContent.menu.content) {
+        return res.status(404).json({ error: 'Dish not found' });
+      }
+
+      allContent.menu.content = newContent;
+
+      // Save the updated content back to the file
+      fs.writeFile(dataFile, JSON.stringify(allContent, null, 2), 'utf8', (err) => {
+        if (err) {
+          console.error('Error writing data file:', err);
+          return res.status(500).json({ error: 'Error writing data file' });
+        }
+        res.json({ message: 'Dish deleted successfully' });
+      });
+    } catch (parseError) {
+      console.error('Error parsing data file:', parseError);
+      res.status(500).json({ error: 'Error parsing data file' });
+    }
+  });
+});
+
+// Endpoint to update an existing dish
+app.post('/api/update-dish', ensureAuthenticated, (req, res) => {
+  upload.single('image')(req, res, function(err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: 'File upload error: ' + err.message });
+    } else if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    const { dishId, name, price, description, category } = req.body;
+    let dietary = [];
     
-    // Format reservation date and time for better readability
-    const reservationDate = new Date(date);
-    const formattedDate = reservationDate.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-    
-    // Configure email transport (Gmail)
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: 'cliptyque@gmail.com', // Admin's Gmail
-        pass: 'ldir iwcp houu mcxs'  // Admin's password (app password)
+    try {
+      if (req.body.dietary) {
+        dietary = JSON.parse(req.body.dietary);
+      }
+    } catch (error) {
+      console.error('Error parsing dietary options:', error);
+    }
+
+    if (!dishId || !name || !price || !category) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Get image path if uploaded
+    const hasNewImage = !!req.file;
+    const newImagePath = hasNewImage ? 'images/' + req.file.filename : '';
+
+    fs.readFile(dataFile, 'utf8', (err, data) => {
+      if (err) {
+        console.error('Error reading data file:', err);
+        return res.status(500).json({ error: 'Error reading data file' });
+      }
+
+      try {
+        const allContent = JSON.parse(data);
+        
+        if (!allContent.menu || !allContent.menu.content) {
+          return res.status(404).json({ error: 'Menu content not found' });
+        }
+
+        // Create temporary DOM to find and update the dish
+        let updatedContent = allContent.menu.content;
+        
+        // Find dish by ID and replace its content
+        const dishRegex = new RegExp(`<div class="bg-white p-5 rounded-lg shadow-md menu-item">[\\s\\S]*?data-dish-id="${dishId}"[\\s\\S]*?<\\/div>\\s*<\\/div>`, 'g');
+        const dishMatch = dishRegex.exec(updatedContent);
+        
+        if (!dishMatch) {
+          return res.status(404).json({ error: 'Dish not found' });
+        }
+        
+        // Get existing dish HTML to extract image path if no new image was provided
+        const existingDishHTML = dishMatch[0];
+        let imagePath = newImagePath;
+        
+        if (!hasNewImage) {
+          // Extract existing image path if no new image
+          const imgSrcRegex = /<img src="([^"]+)" alt="/;
+          const imgMatch = existingDishHTML.match(imgSrcRegex);
+          imagePath = imgMatch && imgMatch[1] ? imgMatch[1] : 'images/placeholder-dish.png';
+        }
+
+        // Create dietary icons HTML
+        const dietaryIcons = {
+          'vegetarian': '<span class="text-green-600"><i class="fas fa-leaf" title="Vegetarian"></i></span>',
+          'vegan': '<span class="text-green-700"><i class="fas fa-seedling" title="Vegan"></i></span>',
+          'gluten-free': '<span class="text-yellow-600"><i class="fas fa-wheat-awn-circle-exclamation" title="Gluten-Free"></i></span>',
+          'spicy': '<span class="text-red-500"><i class="fas fa-pepper-hot" title="Spicy"></i></span>',
+          'chefs-special': '<span class="text-blue-500"><i class="fas fa-star" title="Chef\'s Special"></i></span>'
+        };
+
+        let dietaryHTML = '';
+        dietary.forEach(option => {
+          if (dietaryIcons[option]) {
+            dietaryHTML += ' ' + dietaryIcons[option];
+          }
+        });
+
+        // Create updated dish HTML
+        const updatedDishHTML = `
+          <div class="bg-white p-5 rounded-lg shadow-md menu-item">
+            <div class="flex justify-between items-start mb-2">
+              <h4 class="text-xl font-semibold" data-dish-id="${dishId}">${name} ${dietaryHTML}</h4>
+              <span class="text-red-600 font-medium">€${price}</span>
+            </div>
+            <p class="text-gray-600 mb-2">${description}</p>
+            <div class="relative">
+              <img src="${imagePath}" alt="${name}" class="w-full h-40 object-cover rounded-md">
+              <button class="delete-dish-btn absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700" data-dish-id="${dishId}">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </div>
+        `;
+
+        // First - if category changed, remove from old category
+        updatedContent = updatedContent.replace(dishRegex, '');
+        
+        // Then add to new category
+        const categoryId = category;
+        const categoryRegex = new RegExp(`<div id="${categoryId}">[\\s\\S]*?<div class="grid grid-cols-1 md:grid-cols-2 gap-6">([\\s\\S]*?)<\\/div>`, 'i');
+        
+        const categoryMatch = categoryRegex.exec(updatedContent);
+        if (categoryMatch) {
+          // Insert dish at the beginning of the grid
+          updatedContent = updatedContent.replace(
+            `<div id="${categoryId}">`,
+            `<div id="${categoryId}">`
+          ).replace(
+            `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">`,
+            `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">${updatedDishHTML}`
+          );
+        } else {
+          console.error(`Category ${categoryId} not found in menu content`);
+          return res.status(400).json({ error: `Category ${categoryId} not found in menu content` });
+        }
+
+        // Update menu content
+        allContent.menu.content = updatedContent;
+
+        // Save the updated content back to the file
+        fs.writeFile(dataFile, JSON.stringify(allContent, null, 2), 'utf8', (err) => {
+          if (err) {
+            console.error('Error writing data file:', err);
+            return res.status(500).json({ error: 'Error writing data file' });
+          }
+          res.json({ 
+            message: 'Dish updated successfully',
+            dishId: dishId,
+            imagePath: imagePath
+          });
+        });
+      } catch (parseError) {
+        console.error('Error parsing data file:', parseError);
+        res.status(500).json({ error: 'Error parsing data file' });
       }
     });
-    
-    // Email to restaurant admin (reservation notification)
-    const adminMailOptions = {
-      from: 'cliptyque@gmail.com',
-      to: 'cliptyque@gmail.com', // Send to the admin email
-      subject: `New Reservation: ${name} for ${guests} on ${formattedDate}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #e53e3e; color: white; padding: 20px; text-align: center;">
-            <h1>New Reservation Request</h1>
-          </div>
-          <div style="padding: 20px; border: 1px solid #ddd; background-color: #f9f9f9;">
-            <h2>Reservation Details</h2>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Date:</strong> ${formattedDate}</p>
-            <p><strong>Time:</strong> ${time}</p>
-            <p><strong>Number of Guests:</strong> ${guests}</p>
-            <p><strong>Phone:</strong> ${phone}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            ${message ? `<p><strong>Special Requests:</strong> ${message}</p>` : ''}
-            <p style="margin-top: 20px;">Please log in to the admin panel to confirm or cancel this reservation.</p>
-          </div>
+  });
+});
+
+// Endpoint to save dish order and categories
+app.post('/api/save-dish-order', ensureAuthenticated, (req, res) => {
+  const { dishes } = req.body;
+  
+  if (!dishes || !Array.isArray(dishes) || dishes.length === 0) {
+    return res.status(400).json({ error: 'Invalid dishes data' });
+  }
+
+  fs.readFile(dataFile, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading data file:', err);
+      return res.status(500).json({ error: 'Error reading data file' });
+    }
+
+    try {
+      const allContent = JSON.parse(data);
+      
+      if (!allContent.menu || !allContent.menu.content) {
+        return res.status(404).json({ error: 'Menu content not found' });
+      }
+
+      // Extract all dishes from the menu content using JSDOM
+      const dom = new JSDOM(allContent.menu.content);
+      const tempDiv = dom.window.document.createElement('div');
+      tempDiv.innerHTML = allContent.menu.content;
+      
+      // Group dishes by category
+      const dishesByCategory = {};
+      dishes.forEach(dish => {
+        if (!dishesByCategory[dish.category]) {
+          dishesByCategory[dish.category] = [];
+        }
+        dishesByCategory[dish.category].push(dish);
+      });
+      
+      // Sort dishes within each category
+      Object.keys(dishesByCategory).forEach(category => {
+        dishesByCategory[category].sort((a, b) => a.order - b.order);
+      });
+      
+      // Create a map of dish IDs to HTML
+      const dishMap = {};
+      const dishElements = dom.window.document.querySelectorAll('.menu-item');
+      
+      dishElements.forEach(element => {
+        const nameElement = element.querySelector('[data-dish-id]');
+        if (nameElement) {
+          const id = nameElement.getAttribute('data-dish-id');
+          dishMap[id] = element.outerHTML;
+        }
+      });
+      
+      // Clear all existing dishes from categories
+      let updatedContent = allContent.menu.content;
+      Object.keys(dishesByCategory).forEach(categoryId => {
+        const categoryRegex = new RegExp(`(<div id="${categoryId}">[\\s\\S]*?<div class="grid grid-cols-1 md:grid-cols-2 gap-6">)[\\s\\S]*?(<\\/div>)`, 'i');
+        updatedContent = updatedContent.replace(categoryRegex, '$1$2');
+      });
+      
+      // Insert dishes in their new order for each category
+      Object.keys(dishesByCategory).forEach(categoryId => {
+        let categoryContent = '';
+        
+        dishesByCategory[categoryId].forEach(dish => {
+          if (dishMap[dish.dishId]) {
+            categoryContent += dishMap[dish.dishId];
+          }
+        });
+        
+        if (categoryContent) {
+          const categoryRegex = new RegExp(`(<div id="${categoryId}">[\\s\\S]*?<div class="grid grid-cols-1 md:grid-cols-2 gap-6">)([\\s\\S]*?)(<\\/div>)`, 'i');
+          updatedContent = updatedContent.replace(categoryRegex, `$1${categoryContent}$3`);
+        }
+      });
+      
+      // Update menu content
+      allContent.menu.content = updatedContent;
+      
+      // Save the updated content back to the file
+      fs.writeFile(dataFile, JSON.stringify(allContent, null, 2), 'utf8', (err) => {
+        if (err) {
+          console.error('Error writing data file:', err);
+          return res.status(500).json({ error: 'Error writing data file' });
+        }
+        res.json({ message: 'Dish order saved successfully' });
+      });
+    } catch (parseError) {
+      console.error('Error parsing data file:', parseError);
+      res.status(500).json({ error: 'Error parsing data file' });
+    }
+  });
+});
+
+// Endpoint to manage menu categories
+app.post('/api/menu-categories', ensureAuthenticated, (req, res) => {
+  const { categories } = req.body;
+  
+  if (!categories || !Array.isArray(categories) || categories.length === 0) {
+    return res.status(400).json({ error: 'Invalid categories data' });
+  }
+
+  fs.readFile(dataFile, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading data file:', err);
+      return res.status(500).json({ error: 'Error reading data file' });
+    }
+
+    try {
+      const allContent = JSON.parse(data);
+      
+      if (!allContent.menu) {
+        allContent.menu = {
+          title: 'Our Menu',
+          content: '',
+          footer: '© 2025 La Bella Cucina. All rights reserved.'
+        };
+      }
+
+      // Store existing dishes by category to preserve them
+      const existingDishes = {};
+      
+      // Use simple string parsing instead of DOM manipulation
+      if (allContent.menu.content) {
+        const content = allContent.menu.content;
+        
+        // Find all category sections using regex
+        const categoryRegex = /<div id="([^"]+)">[^<]*<h3[^>]*>([^<]+)<\/h3>[^<]*<div class="grid[^>]*>([^<]*(?:<(?!\/div)[^<]*)*)<\/div>/g;
+        let match;
+        
+        while ((match = categoryRegex.exec(content)) !== null) {
+          const categoryId = match[1];
+          const gridContent = match[3] || '';
+          existingDishes[categoryId] = gridContent;
+        }
+      }
+
+      // Create new menu structure with the provided categories
+      let menuContent = `<div class="space-y-12">
+        <section class="mb-8">
+          <h2 class="text-3xl font-bold text-gray-800 mb-4">Our Culinary Experience</h2>
+          <p class="text-gray-600 leading-relaxed">Discover our carefully crafted menu featuring authentic Italian cuisine made with the freshest ingredients and traditional recipes passed down through generations.</p>
+        </section>
+        <section class="space-y-10">`;
+
+      // Add each category
+      categories.forEach(category => {
+        // Create a valid ID from the category name - only lowercase letters and numbers, replace spaces with dashes
+        const categoryId = category.toLowerCase()
+          .replace(/\s+/g, '-')         // Replace spaces with dashes
+          .replace(/[^a-z0-9-]/g, '')   // Remove any characters that aren't lowercase letters, numbers, or dashes
+          .replace(/-+/g, '-');         // Replace multiple consecutive dashes with a single dash
+        
+        // Get existing dishes for this category or for similar categories
+        let dishesHTML = '';
+        
+        // First try exact match
+        if (existingDishes[categoryId]) {
+          dishesHTML = existingDishes[categoryId];
+        } else {
+          // Try to match with similar categories (e.g., "Starters" → "starter")
+          const similarCategoryKey = Object.keys(existingDishes).find(key => 
+            key.includes(categoryId) || categoryId.includes(key)
+          );
+          
+          if (similarCategoryKey) {
+            dishesHTML = existingDishes[similarCategoryKey];
+          }
+        }
+        
+        menuContent += `
+          <div id="${categoryId}">
+            <h3 class="text-2xl font-bold text-red-600 mb-4 border-b border-gray-200 pb-2">${category}</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">${dishesHTML}</div>
+          </div>`;
+      });
+
+      menuContent += `
+        </section>
+      </div>`;
+
+      // Update menu content
+      allContent.menu.content = menuContent;
+
+      // Save the updated content back to the file
+      fs.writeFile(dataFile, JSON.stringify(allContent, null, 2), 'utf8', (err) => {
+        if (err) {
+          console.error('Error writing data file:', err);
+          return res.status(500).json({ error: 'Error writing data file' });
+        }
+        res.json({ message: 'Menu categories updated successfully' });
+      });
+    } catch (parseError) {
+      console.error('Error parsing data file:', parseError);
+      res.status(500).json({ error: 'Error parsing data file' });
+    }
+  });
+});
+
 // Endpoint to handle reservations
 app.post('/api/reservation', (req, res) => {
   const { name, email, date, time, guests, phone, message } = req.body;
@@ -1789,24 +1630,6 @@ const ensurePlaceholderImage = () => {
 // Call the function on server startup
 ensurePlaceholderImage();
 
-// Configure a function to find an available port starting from the specified PORT
-const startServer = (initialPort) => {
-  // Try to start the server on the specified port
-  const server = app.listen(initialPort, () => {
-    console.log(`Server is running on http://localhost:${initialPort}`);
-  });
-
-  // Handle port in use error
-  server.on('error', (e) => {
-    if (e.code === 'EADDRINUSE') {
-      console.log(`Port ${initialPort} is already in use, trying port ${initialPort + 1}...`);
-      // Try the next port
-      startServer(initialPort + 1);
-    } else {
-      console.error('Server error:', e);
-    }
-  });
-};
-
-// Start the server with the initial port from environment or config
-startServer(PORT);
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});

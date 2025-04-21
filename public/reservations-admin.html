@@ -6,6 +6,7 @@
   <title>La Bella Cucina - Manage Reservations</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/h2-styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body class="bg-gray-50">
@@ -14,8 +15,8 @@
     <div class="max-w-7xl mx-auto px-4 py-4">
       <div class="flex justify-between items-center">
         <!-- Logo -->
-        <a href="index.html" class="text-2xl font-bold text-red-600 hover:text-red-700 transition-colors" id="site-title">
-          <i class="fas fa-utensils mr-2"></i>La Bella Cucina
+        <a href="index.html" class="text-xl font-bold text-red-600 hover:text-red-700 transition-colors hero-title" id="site-title" style="margin-right: 4rem;">
+          La Bella Cucina
         </a>
         
         <!-- Mobile menu button -->
@@ -29,9 +30,11 @@
         <div class="hidden md:flex items-center space-x-6">
           <a href="index.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Home</a>
           <a href="menu.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Menu</a>
-          <a href="about.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">About</a>
           <a href="contact.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Reservations</a>
-          <a href="reservations-admin.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors border-b-2 border-red-600">Admin</a>
+          <a href="about.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">About</a>
+          <a href="reservations-admin.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors border-b-2 border-red-600">
+            <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
+          </a>
           <a href="/logout" id="logout-link" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">
             <i class="fas fa-sign-out-alt mr-1"></i>Logout
           </a>
@@ -39,14 +42,14 @@
       </div>
       
       <!-- Mobile menu (hidden by default) -->
-      <div id="mobile-menu" class="md:hidden hidden pt-4 pb-2">
-        <div class="flex flex-col space-y-3">
-          <a href="index.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Home</a>
-          <a href="menu.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Menu</a>
-          <a href="about.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">About</a>
-          <a href="contact.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Reservations</a>
-          <a href="reservations-admin.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors font-semibold">Admin</a>
-          <a href="/logout" id="mobile-logout-link" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">
+      <div id="mobile-menu" class="md:hidden hidden">
+        <div class="flex flex-col">
+          <a href="index.html">Home</a>
+          <a href="menu.html">Menu</a>
+          <a href="contact.html">Reservations</a>
+          <a href="about.html">About</a>
+          <a href="reservations-admin.html" class="font-semibold">Manage Reservations</a>
+          <a href="/logout" id="mobile-logout-link">
             <i class="fas fa-sign-out-alt mr-1"></i>Logout
           </a>
         </div>
@@ -202,6 +205,12 @@
   <script src="script.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Force set the site title for this page since it's not in the data.json
+      const siteTitle = document.getElementById('site-title');
+      if (siteTitle) {
+        siteTitle.innerHTML = '<i class="fas fa-utensils mr-2"></i>La Bella Cucina';
+      }
+      
       // Check if user is authenticated
       checkAuth().then(isAuthenticated => {
         if (!isAuthenticated) {
@@ -570,6 +579,22 @@
           alert('Failed to update reservation status. Please try again.');
         }
       }
+    });
+  </script>
+
+  <!-- Custom script for this page -->
+  <script>
+    // Set title immediately to avoid "undefined" from showing
+    document.addEventListener('DOMContentLoaded', function() {
+      // Force set the site title for the reservations admin page
+      const siteTitle = document.getElementById('site-title');
+      if (siteTitle) {
+        // Make sure we don't see "undefined" text
+        siteTitle.innerHTML = '<i class="fas fa-utensils mr-2"></i>La Bella Cucina';
+      }
+      
+      // Also ensure document title is set properly
+      document.title = 'La Bella Cucina - Manage Reservations';
     });
   </script>
 </body>

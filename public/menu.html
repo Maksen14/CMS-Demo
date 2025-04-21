@@ -6,6 +6,7 @@
   <title>La Bella Cucina - Menu</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/h2-styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <link rel="preload" href="against.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -220,19 +221,19 @@
     }
   </style>
 </head>
-<body>
+<body class="bg-gray-50 menu-page">
   <!-- Navigation -->
   <nav class="fixed w-full z-50 menu-navbar">
     <div class="max-w-7xl mx-auto px-4 py-4">
       <div class="flex justify-between items-center">
         <!-- Logo -->
-        <a href="index.html" class="text-2xl font-bold text-white hover:text-yellow-300 transition-colors" id="site-title">
-          <i class="fas fa-utensils mr-2"></i>La Bella Cucina
+        <a href="index.html" class="text-xl font-bold text-white hover:text-gray-200 transition-colors hero-title" id="site-title" style="margin-right: 4rem;">
+          La Bella Cucina
         </a>
         
         <!-- Mobile menu button -->
         <div class="md:hidden">
-          <button id="mobileMenuBtn" class="text-white hover:text-yellow-300 focus:outline-none">
+          <button id="mobile-menu-button" class="text-white hover:text-yellow-300 focus:outline-none">
             <i class="fas fa-bars text-2xl"></i>
           </button>
         </div>
@@ -246,25 +247,27 @@
           <a href="reservations-admin.html" class="admin-link px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors" style="display: none;">
             <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
           </a>
-          <a href="/logout" id="logout-link" class="px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors hidden">
+          <a href="/logout" id="logout-link" class="px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors" style="display: none;">
             <i class="fas fa-sign-out-alt mr-1"></i>Logout
           </a>
         </div>
         </div>
       </div>
       
-    <!-- Simple Mobile Menu (Initially Hidden) -->
-    <div id="mobileMenu" class="mobile-menu">
-      <a href="index.html">Home</a>
-      <a href="menu.html" class="active">Menu</a>
-      <a href="contact.html">Reservations</a>
-      <a href="about.html">About</a>
-      <a href="reservations-admin.html" class="admin-link">
-        <i class="fas fa-calendar-check mr-2"></i>Manage Reservations
-      </a>
-      <a href="/logout" id="mobile-logout-link">
-        <i class="fas fa-sign-out-alt mr-2"></i>Logout
-      </a>
+    <!-- Mobile menu (hidden by default) -->
+    <div id="mobile-menu" class="md:hidden hidden">
+      <div class="flex flex-col">
+        <a href="index.html">Home</a>
+        <a href="menu.html" class="font-semibold">Menu</a>
+        <a href="contact.html">Reservations</a>
+        <a href="about.html">About</a>
+        <a href="reservations-admin.html" class="admin-link" style="display: none;">
+          <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
+        </a>
+        <a href="/logout" id="mobile-logout-link" style="display: none;">
+          <i class="fas fa-sign-out-alt mr-1"></i>Logout
+        </a>
+      </div>
     </div>
   </nav>
 
@@ -582,17 +585,22 @@
     // Simple mobile menu functionality
     document.addEventListener('DOMContentLoaded', function() {
       // Mobile menu toggle
-      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-      const mobileMenu = document.getElementById('mobileMenu'); 
+      const mobileMenuBtn = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu'); 
       
       if (mobileMenuBtn && mobileMenu) {
-        mobileMenuBtn.addEventListener('click', function() {
-          mobileMenu.classList.toggle('show');
+        mobileMenuBtn.addEventListener('click', function(event) {
+          // Prevent event from bubbling up
+          event.stopPropagation();
           
-          if (mobileMenu.classList.contains('show')) {
-            mobileMenuBtn.innerHTML = '<i class="fas fa-times text-2xl"></i>';
-          } else {
+          // Toggle menu visibility
+          mobileMenu.classList.toggle('hidden');
+          
+          // Update icon based on menu state
+          if (mobileMenu.classList.contains('hidden')) {
             mobileMenuBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+          } else {
+            mobileMenuBtn.innerHTML = '<i class="fas fa-times text-2xl"></i>';
           }
         });
         
@@ -600,9 +608,23 @@
         const mobileLinks = mobileMenu.querySelectorAll('a');
         mobileLinks.forEach(link => {
           link.addEventListener('click', function() {
-            mobileMenu.classList.remove('show');
+            mobileMenu.classList.add('hidden');
             mobileMenuBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
           });
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+          // Don't close if clicking on the menu or button
+          if (mobileMenu.contains(event.target) || mobileMenuBtn.contains(event.target)) {
+            return;
+          }
+          
+          // Only close if menu is open
+          if (!mobileMenu.classList.contains('hidden')) {
+            mobileMenu.classList.add('hidden');
+            mobileMenuBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+          }
         });
       }
     });
@@ -698,21 +720,20 @@
       // Additionally, update mobile menu auth elements
       const mobileLogoutLink = document.getElementById('mobile-logout-link');
       const adminLinks = document.querySelectorAll('.admin-link');
+      const navLogoutLink = document.getElementById('logout-link');
       
+      // Handle logout links visibility
       if (mobileLogoutLink) {
-        if (isAuthenticated) {
-          mobileLogoutLink.style.display = 'block';
-        } else {
-          mobileLogoutLink.style.display = 'none';
-        }
+        mobileLogoutLink.style.display = isAuthenticated ? 'block' : 'none';
       }
       
+      if (navLogoutLink) {
+        navLogoutLink.style.display = isAuthenticated ? 'inline-block' : 'none';
+      }
+      
+      // Handle admin links visibility
       adminLinks.forEach(link => {
-        if (isAuthenticated) {
-          link.style.display = 'block';
-        } else {
-          link.style.display = 'none';
-        }
+        link.style.display = isAuthenticated ? 'block' : 'none';
       });
     };
     

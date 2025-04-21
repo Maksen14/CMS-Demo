@@ -33,7 +33,15 @@ document.addEventListener("DOMContentLoaded", function() {
     .then(data => {
       // Update site title if it exists
       const siteTitle = document.getElementById("site-title");
-      if (siteTitle) siteTitle.innerHTML = data.title;
+      if (siteTitle) {
+        // Only update title if data.title exists and is not undefined
+        if (data.title && data.title !== "undefined") {
+          siteTitle.innerHTML = `${data.title}`;
+        } else {
+          // Keep the default content with just the restaurant name
+          siteTitle.innerHTML = 'La Bella Cucina';
+        }
+      }
 
       // Update content if it exists
       const content = document.getElementById("content");
@@ -44,7 +52,9 @@ document.addEventListener("DOMContentLoaded", function() {
       if (footerText) footerText.innerHTML = data.footer;
 
       // Set page title
-      document.title = data.title || "La Bella Cucina";
+      document.title = pageName === 'reservations-admin' ? 
+        'La Bella Cucina - Manage Reservations' : 
+        (data.title || "La Bella Cucina");
     })
     .catch(err => console.error('Error loading content:', err));
 
@@ -131,16 +141,16 @@ async function updateAuthUI() {
   
   if (footerLoginLink && footerLogoutLink) {
     if (isAuthenticated) {
-      footerLoginLink.classList.add('hidden');
-      footerLogoutLink.classList.remove('hidden');
+      footerLoginLink.style.display = 'none';
+      footerLogoutLink.style.display = 'block';
     } else {
-      footerLoginLink.classList.remove('hidden');
-      footerLogoutLink.classList.add('hidden');
+      footerLoginLink.style.display = 'block';
+      footerLogoutLink.style.display = 'none';
     }
   }
   
   // Show/hide admin controls
-  const adminControls = document.querySelectorAll('.admin-control');
+  const adminControls = document.querySelectorAll('.admin-controls');
   adminControls.forEach(control => {
     control.style.display = isAuthenticated ? 'block' : 'none';
   });
@@ -154,26 +164,23 @@ async function updateAuthUI() {
   // Update navigation login/logout buttons
   const navLogoutLink = document.getElementById('logout-link');
   const mobileNavLogoutLink = document.getElementById('mobile-logout-link');
-  const reservationsAdminLink = document.querySelector('a[href="reservations-admin.html"]');
-  const mobileReservationsAdminLink = document.querySelector('#mobile-menu a[href="reservations-admin.html"]');
+  
+  // Get all admin links in regular and mobile navs
+  const reservationsAdminLinks = document.querySelectorAll('a[href="reservations-admin.html"]');
 
-  if (navLogoutLink && mobileNavLogoutLink) {
-    if (isAuthenticated) {
-      navLogoutLink.classList.remove('hidden');
-      mobileNavLogoutLink.classList.remove('hidden');
-    } else {
-      navLogoutLink.classList.add('hidden');
-      mobileNavLogoutLink.classList.add('hidden');
-    }
+  // Handle logout links - completely hide them when not authenticated
+  if (navLogoutLink) {
+    navLogoutLink.style.display = isAuthenticated ? 'inline-block' : 'none';
+  }
+  
+  if (mobileNavLogoutLink) {
+    mobileNavLogoutLink.style.display = isAuthenticated ? 'block' : 'none';
   }
 
-  // Show/hide reservations admin link
-  if (reservationsAdminLink) {
-    reservationsAdminLink.style.display = isAuthenticated ? 'inline-block' : 'none';
-  }
-  if (mobileReservationsAdminLink) {
-    mobileReservationsAdminLink.style.display = isAuthenticated ? 'block' : 'none';
-  }
+  // Handle admin links - completely hide them when not authenticated
+  reservationsAdminLinks.forEach(link => {
+    link.style.display = isAuthenticated ? 'inline-block' : 'none';
+  });
 }
 
 // Load content from the server
@@ -535,24 +542,43 @@ function setupMobileNav() {
   const mobileMenu = document.getElementById('mobile-menu');
   
   if (mobileMenuButton && mobileMenu) {
-    mobileMenuButton.addEventListener('click', () => {
-      // Toggle the mobile menu
+    // Use direct click handler with stopPropagation
+    mobileMenuButton.addEventListener('click', function(event) {
+      // Prevent event from bubbling up
+      event.stopPropagation();
+      
+      // Toggle the mobile menu visibility
+      mobileMenu.classList.toggle('hidden');
+      
+      // Toggle between hamburger and close icons
       if (mobileMenu.classList.contains('hidden')) {
-        mobileMenu.classList.remove('hidden');
-        mobileMenuButton.innerHTML = '<i class="fas fa-times text-2xl"></i>';
-      } else {
-        mobileMenu.classList.add('hidden');
         mobileMenuButton.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+      } else {
+        mobileMenuButton.innerHTML = '<i class="fas fa-times text-2xl"></i>';
       }
     });
     
     // Close menu when clicking on a link
     const mobileLinks = mobileMenu.querySelectorAll('a');
     mobileLinks.forEach(link => {
-      link.addEventListener('click', () => {
+      link.addEventListener('click', function() {
         mobileMenu.classList.add('hidden');
         mobileMenuButton.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
       });
+    });
+    
+    // Close menu when clicking outside of it
+    document.addEventListener('click', function(event) {
+      // Don't close if clicking on the menu itself or the menu button
+      if (mobileMenu.contains(event.target) || mobileMenuButton.contains(event.target)) {
+        return;
+      }
+      
+      // Only close if menu is currently open
+      if (!mobileMenu.classList.contains('hidden')) {
+        mobileMenu.classList.add('hidden');
+        mobileMenuButton.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+      }
     });
   }
 }

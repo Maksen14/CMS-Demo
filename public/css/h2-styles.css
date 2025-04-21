@@ -1,0 +1,114 @@
+/* Additional styles for h2 elements */
+h2 {
+  font-size: 2.5rem !important; /* Default size for mobile */
+}
+
+/* Larger h2 size for desktop screens */
+@media (min-width: 768px) {
+  h2 {
+    font-size: 2.5rem !important; /* Larger size for desktop */
+  }
+}
+
+/* Reduce size of h2 on specific sections for mobile */
+.text-5xl.font-bold {
+  font-size: 2rem !important;
+}
+
+.text-4xl.font-bold {
+  font-size: 2.5rem !important;
+}
+
+.text-3xl.font-bold {
+  font-size: 1.5rem !important;
+}
+
+/* Ensure these styles override Tailwind classes */
+h2.text-5xl, h2.text-4xl, h2.text-3xl, h2.text-2xl {
+  font-size: 1.75rem !important;
+}
+
+/* Override for desktop */
+@media (min-width: 768px) {
+  .text-5xl.font-bold,
+  .text-4xl.font-bold,
+  .text-3xl.font-bold,
+  h2.text-5xl, 
+  h2.text-4xl, 
+  h2.text-3xl, 
+  h2.text-2xl {
+    font-size: 2.5rem !important;
+  }
+}
+
+/* Make normal text smaller */
+p, .text-lg {
+  font-size: 1rem !important;
+}
+
+/* Desktop size for normal text */
+@media (min-width: 768px) {
+  p, .text-lg {
+    font-size: 1rem !important;
+  }
+}
+
+/* Adjust specific text classes */
+.text-xl {
+  font-size: 1rem !important;
+}
+
+.text-lg {
+  font-size: 0.9rem !important;
+}
+
+@media (min-width: 768px) {
+  .text-xl {
+    font-size: 1rem !important;
+  }
+  
+  .text-lg {
+    font-size: 1rem !important;
+  }
+}
+
+/* Ensure navbar title is larger than regular text */
+#site-title {
+  font-size: 1.6rem !important;
+}
+
+@media (min-width: 768px) {
+  #site-title {
+    font-size: 1.6rem !important;
+  }
+}
+
+/* Make the quote text "More than just pizza you get me" bigger */
+.quote-text {
+  font-size: 2.25rem !important;
+  line-height: 1.4 !important;
+  font-style: italic !important;
+  font-weight: 500 !important;
+}
+
+@media (min-width: 768px) {
+  .quote-text {
+    font-size: 2.25rem !important;
+    line-height: 1.2 !important;
+  }
+}
+
+/* Set different colors for site title on each page */
+/* Default site title color is red (from the class settings) */
+
+/* Menu page - White site title */
+.menu-navbar #site-title,
+body.menu-page #site-title {
+  color: white !important;
+}
+
+/* Reservation/Contact page - Black site title */
+.bg-yellow-300 #site-title,
+body.contact-page #site-title {
+  color: black !important;
+} 

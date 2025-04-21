@@ -95,24 +95,36 @@ button {
 /* Add styles for mobile nav */
 #mobile-menu {
   transition: all 0.3s ease-in-out;
-  max-height: 0;
-  overflow: hidden;
+  background-color: inherit; /* Take parent background color */
 }
 
 #mobile-menu.hidden {
-  max-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
+  display: none; /* Standard hidden behavior */
 }
 
 #mobile-menu:not(.hidden) {
-  max-height: 300px;
-  border-top: 1px solid #eee;
+  display: block;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  z-index: 40;
+}
+
+/* Mobile menu links styling */
+#mobile-menu a {
+  display: block;
+  padding: 12px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 400;
+}
+
+#mobile-menu a:last-child {
+  border-bottom: none;
 }
 
 .navbar-transparent #mobile-menu:not(.hidden) {
-  background-color: rgba(0, 0, 0, 0.8);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: inherit;
 }
 
 .navbar-transparent #mobile-menu a {
@@ -120,8 +132,7 @@ button {
 }
 
 .navbar-scrolled #mobile-menu:not(.hidden) {
-  background-color: #1f2937; /* Slightly lighter than navbar for contrast */
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #111827; /* bg-gray-900 */
 }
 
 .navbar-scrolled #mobile-menu a {
@@ -130,6 +141,13 @@ button {
 
 #mobile-menu-button {
   transition: all 0.2s ease;
+}
+
+#site-title {
+  position: relative;
+  font-family: 'Against', sans-serif;
+  letter-spacing: 2px;
+  margin-right: 2rem;
 }
 
 #mobile-menu-button:hover {
@@ -326,16 +344,40 @@ nav .text-gray-600,
   letter-spacing: 0.5px;
   text-transform: uppercase;
   transition: all 0.3s ease;
+  font-size: 0.85rem; /* Make desktop navbar text smaller */
+}
+
+/* Desktop navbar text size on larger screens */
+@media (min-width: 768px) {
+  nav a:not(#site-title), 
+  nav .text-gray-600 {
+    font-size: 0.85rem; /* Smaller text size for desktop navbar */
+    margin: 0 0.2rem; /* Add some spacing between navbar items */
+  }
+  
+  /* Improve overall layout of the navbar */
+  nav .flex.justify-between.items-center {
+    gap: 3rem !important; /* Force a larger gap */
+  }
+  
+  /* Add stronger spacing between logo and links */
+  nav .hidden.md\:flex.items-center.space-x-6 {
+    margin-left: 3rem !important; /* Force more space to left of links */
+  }
+  
+  /* Push navigation links to right side */
+  nav .max-w-7xl.mx-auto.px-4.py-4 {
+    display: flex;
+  }
+  
+  nav .flex.justify-between.items-center {
+    width: 100%;
+    justify-content: space-between !important;
+  }
 }
 
 nav a:not(#site-title):hover {
   transform: translateY(-1px);
-}
-
-/* Ensure site title keeps Against font */
-#site-title {
-  font-family: 'Against', sans-serif;
-  letter-spacing: 2px;
 }
 
 /* Mobile menu appearance */
@@ -470,7 +512,7 @@ section.py-16.bg-gray-50 .text-5xl {
 @media (min-width: 768px) {
   /* Base h2 sizing */
   h2 {
-    font-size: 2.5rem;
+    font-size: 3.5rem;
     line-height: 1.2;
   }
   

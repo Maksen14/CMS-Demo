@@ -196,9 +196,6 @@ app.get('/login', (req, res) => {
           <div>
             <div class="flex items-center justify-between">
               <label for="password" class="block text-sm font-medium text-gray-900">Password</label>
-              <div class="text-sm">
-                <a href="#" class="font-semibold text-indigo-600 hover:text-indigo-500">Mot de passe oublié?</a>
-              </div>
             </div>
             <div class="mt-2">
               <input type="password" name="password" id="password" autocomplete="current-password" required class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600">
@@ -243,22 +240,61 @@ app.get('/api/auth-status', (req, res) => {
    API Endpoints for Content
 -------------------------- */
 
-app.get('/api/content', (req, res) => { let page = req.query.page || 'index'; // Supprimer l'extension .html si présente 
-page = page.replace('.html', '');
+app.get('/api/content', (req, res) => { 
+  let page = req.query.page || 'index'; 
+  // Supprimer l'extension .html si présente 
+  page = page.replace('.html', '');
+
+  // Special handling for reservations-admin page
+  if (page === 'reservations-admin') {
+    // Return a default content object for the reservations admin page
+    return res.json({
+      title: 'Manage Reservations',
+      content: '',
+      footer: '© 2025 La Bella Cucina. All rights reserved.',
+      heroImage: ''
+    });
+  }
 
   if (page === 'menu') { 
     // Pour la page menu, lire le contenu dans menu.json 
-    fs.readFile(menuFile, 'utf8', (err, data) => { if (err) { console.error("Erreur lors de la lecture du fichier menu.json:", err); 
-    return res.status(500).json({ error: 'Erreur lors de la lecture du fichier menu.json' }); } 
-    try { const menuContent = JSON.parse(data); res.json(menuContent); } 
-    catch (parseError) { console.error("Erreur lors du parsing de menu.json:", parseError); 
-      res.status(500).json({ error: 'Erreur lors du parsing du fichier menu.json' }); } }); } 
-      else { 
-        //Pour les autres pages, lire data.json 
-        fs.readFile(dataFile, 'utf8', (err, data) => { if (err) { 
-          console.error('Erreur lors de la lecture du fichier data.json:', err); return res.status(500).json({ error: 'Erreur lors de la lecture du fichier data.json' }); } 
-          try { const content = JSON.parse(data); if (content[page]) { res.json(content[page]); } else { res.status(404).json({ error: 'Page non trouvée' }); } } 
-          catch (parseError) { console.error('Erreur lors du parsing du fichier data.json:', parseError); res.status(500).json({ error: 'Erreur lors du parsing du fichier data.json' }); } }); } });
+    fs.readFile(menuFile, 'utf8', (err, data) => { 
+      if (err) { 
+        console.error("Erreur lors de la lecture du fichier menu.json:", err); 
+        return res.status(500).json({ error: 'Erreur lors de la lecture du fichier menu.json' }); 
+      } 
+      try { 
+        const menuContent = JSON.parse(data); 
+        res.json(menuContent); 
+      } 
+      catch (parseError) { 
+        console.error("Erreur lors du parsing de menu.json:", parseError); 
+        res.status(500).json({ error: 'Erreur lors du parsing du fichier menu.json' }); 
+      } 
+    }); 
+  } 
+  else { 
+    //Pour les autres pages, lire data.json 
+    fs.readFile(dataFile, 'utf8', (err, data) => { 
+      if (err) { 
+        console.error('Erreur lors de la lecture du fichier data.json:', err); 
+        return res.status(500).json({ error: 'Erreur lors de la lecture du fichier data.json' }); 
+      } 
+      try { 
+        const content = JSON.parse(data); 
+        if (content[page]) { 
+          res.json(content[page]); 
+        } else { 
+          res.status(404).json({ error: 'Page non trouvée' }); 
+        } 
+      } 
+      catch (parseError) { 
+        console.error('Erreur lors du parsing du fichier data.json:', parseError); 
+        res.status(500).json({ error: 'Erreur lors du parsing du fichier data.json' }); 
+      } 
+    }); 
+  } 
+});
 
 
 // Middleware to protect routes that require authentication

@@ -6,6 +6,7 @@
   <title>La Bella Cucina - Reservations</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/h2-styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,16 +33,27 @@
       position: relative;
       z-index: 5;
     }
+    
+    /* Ensure mobile menu elements stay visible */
+    #mobile-menu-button {
+      position: relative;
+      z-index: 70;
+    }
+    
+    #site-title {
+      position: relative;
+      z-index: 70;
+    }
   </style>
 </head>
-<body class="bg-gray-900">
+<body class="bg-gray-900 contact-page">
   <!-- Navigation -->
   <nav class="bg-yellow-300 shadow-lg fixed w-full z-50">
     <div class="max-w-7xl mx-auto px-4 py-4">
       <div class="flex justify-between items-center">
         <!-- Logo -->
-        <a href="index.html" class="text-2xl font-bold text-black hover:text-black transition-colors" id="site-title">
-          <i class="fas fa-utensils mr-2"></i>La Bella Cucina
+        <a href="index.html" class="text-xl font-bold text-black hover:text-gray-800 transition-colors hero-title" id="site-title" style="margin-right: 4rem;">
+          La Bella Cucina
         </a>
         
         <!-- Mobile menu button -->
@@ -60,23 +72,23 @@
           <a href="reservations-admin.html" class="px-3 py-2 text-black hover:text-black transition-colors" style="display: none;">
             <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
           </a>
-          <a href="/logout" id="logout-link" class="px-3 py-2 text-black hover:text-black transition-colors hidden">
+          <a href="/logout" id="logout-link" class="px-3 py-2 text-black hover:text-black transition-colors" style="display: none;">
             <i class="fas fa-sign-out-alt mr-1"></i>Logout
           </a>
         </div>
       </div>
       
       <!-- Mobile menu (hidden by default) -->
-      <div id="mobile-menu" class="md:hidden hidden pt-4 pb-2">
-        <div class="flex flex-col space-y-3">
-          <a href="index.html" class="px-3 py-2 text-black hover:text-black transition-colors">Home</a>
-          <a href="menu.html" class="px-3 py-2 text-black hover:text-black transition-colors">Menu</a>
-          <a href="contact.html" class="px-3 py-2 text-black hover:text-black transition-colors font-semibold">Reservations</a>
-          <a href="about.html" class="px-3 py-2 text-black hover:text-black transition-colors">About</a>
-          <a href="reservations-admin.html" class="px-3 py-2 text-black hover:text-black transition-colors" style="display: none;">
+      <div id="mobile-menu" class="md:hidden hidden">
+        <div class="flex flex-col">
+          <a href="index.html">Home</a>
+          <a href="menu.html">Menu</a>
+          <a href="contact.html" class="font-semibold">Reservations</a>
+          <a href="about.html">About</a>
+          <a href="reservations-admin.html" style="display: none;">
             <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
           </a>
-          <a href="/logout" id="mobile-logout-link" class="px-3 py-2 text-black hover:text-black transition-colors hidden">
+          <a href="/logout" id="mobile-logout-link" style="display: none;">
             <i class="fas fa-sign-out-alt mr-1"></i>Logout
           </a>
         </div>

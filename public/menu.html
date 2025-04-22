@@ -223,50 +223,65 @@
 </head>
 <body class="bg-gray-50 menu-page">
   <!-- Navigation -->
-  <nav class="fixed w-full z-50 menu-navbar">
+  <nav class="fixed w-full z-50 menu-navbar navbar-transparent">
     <div class="max-w-7xl mx-auto px-4 py-4">
       <div class="flex justify-between items-center">
         <!-- Logo -->
-        <a href="index.html" class="text-xl font-bold text-white hover:text-gray-200 transition-colors hero-title" id="site-title" style="margin-right: 4rem;">
+        <a href="index.html" class="text-xl font-bold text-red-600 hover:text-red-700 transition-colors hero-title" id="site-title" style="margin-right: 4rem;">
           La Bella Cucina
         </a>
         
         <!-- Mobile menu button -->
         <div class="md:hidden">
-          <button id="mobile-menu-button" class="text-white hover:text-yellow-300 focus:outline-none">
+          <button id="mobile-menu-button" class="text-gray-600 hover:text-red-600 focus:outline-none" 
+                  onclick="
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const mobileMenu = document.getElementById('mobile-menu');
+                    if(mobileMenu.classList.contains('hidden')) {
+                      mobileMenu.classList.remove('hidden');
+                      this.innerHTML = '<i class=\'fas fa-times text-2xl\'></i>';
+                      console.log('Mobile menu opened via inline click');
+                    } else {
+                      mobileMenu.classList.add('hidden');
+                      this.innerHTML = '<i class=\'fas fa-bars text-2xl\'></i>';
+                      console.log('Mobile menu closed via inline click');
+                    }
+                    return false;
+                  ">
             <i class="fas fa-bars text-2xl"></i>
           </button>
         </div>
         
         <!-- Desktop menu -->
         <div class="hidden md:flex items-center space-x-6">
-          <a href="index.html" class="px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors">Home</a>
-          <a href="menu.html" class="px-3 py-2 text-white hover:text-yellow-300 transition-colors border-b-2 border-yellow-300">Menu</a>
-          <a href="contact.html" class="px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors">Reservations</a>
-          <a href="about.html" class="px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors">About</a>
-          <a href="reservations-admin.html" class="admin-link px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors" style="display: none;">
+          <a href="index.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Home</a>
+          <a href="menu.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors border-b-2 border-red-600">Menu</a>
+          <a href="contact.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">Reservations</a>
+          <a href="about.html" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors">About</a>
+          <a href="reservations-admin.html" class="admin-link px-3 py-2 text-gray-600 hover:text-red-600 transition-colors" style="display: none;">
             <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
           </a>
-          <a href="/logout" id="logout-link" class="px-3 py-2 text-gray-300 hover:text-yellow-300 transition-colors" style="display: none;">
+          <a href="/logout" id="logout-link" class="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors" style="display: none;">
             <i class="fas fa-sign-out-alt mr-1"></i>Logout
           </a>
         </div>
-        </div>
       </div>
       
-    <!-- Mobile menu (hidden by default) -->
-    <div id="mobile-menu" class="md:hidden hidden">
-      <div class="flex flex-col">
-        <a href="index.html">Home</a>
-        <a href="menu.html" class="font-semibold">Menu</a>
-        <a href="contact.html">Reservations</a>
-        <a href="about.html">About</a>
-        <a href="reservations-admin.html" class="admin-link" style="display: none;">
-          <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
-        </a>
-        <a href="/logout" id="mobile-logout-link" style="display: none;">
-          <i class="fas fa-sign-out-alt mr-1"></i>Logout
-        </a>
+      <!-- Mobile menu (hidden by default) -->
+      <div id="mobile-menu" class="md:hidden hidden">
+        <div class="flex flex-col">
+          <a href="index.html">Home</a>
+          <a href="menu.html" class="font-semibold">Menu</a>
+          <a href="contact.html">Reservations</a>
+          <a href="about.html">About</a>
+          <a href="reservations-admin.html" class="admin-link" style="display: none;">
+            <i class="fas fa-calendar-check mr-1"></i>Manage Reservations
+          </a>
+          <a href="/logout" id="mobile-logout-link" style="display: none;">
+            <i class="fas fa-sign-out-alt mr-1"></i>Logout
+          </a>
+        </div>
       </div>
     </div>
   </nav>
@@ -582,52 +597,78 @@
 
   <script src="script.js"></script>
   <script>
-    // Simple mobile menu functionality
-    document.addEventListener('DOMContentLoaded', function() {
-      // Mobile menu toggle
-      const mobileMenuBtn = document.getElementById('mobile-menu-button');
-      const mobileMenu = document.getElementById('mobile-menu'); 
-      
-      if (mobileMenuBtn && mobileMenu) {
-        mobileMenuBtn.addEventListener('click', function(event) {
-          // Prevent event from bubbling up
-          event.stopPropagation();
-          
-          // Toggle menu visibility
-          mobileMenu.classList.toggle('hidden');
-          
-          // Update icon based on menu state
-          if (mobileMenu.classList.contains('hidden')) {
-            mobileMenuBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
-          } else {
-            mobileMenuBtn.innerHTML = '<i class="fas fa-times text-2xl"></i>';
-          }
-        });
+    // Direct mobile menu implementation with no dependencies
+    (function() {
+      function setupMobileMenu() {
+        // Get elements
+        const mobileMenuBtn = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
         
-        // Close menu when clicking on links
-        const mobileLinks = mobileMenu.querySelectorAll('a');
-        mobileLinks.forEach(link => {
-          link.addEventListener('click', function() {
-            mobileMenu.classList.add('hidden');
-            mobileMenuBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+        console.log('Direct mobile menu setup:', mobileMenuBtn, mobileMenu);
+        
+        // Immediately add event listener if elements exist
+        if (mobileMenuBtn && mobileMenu) {
+          // Remove any existing event listeners by cloning and replacing the button
+          const newBtn = mobileMenuBtn.cloneNode(true);
+          mobileMenuBtn.parentNode.replaceChild(newBtn, mobileMenuBtn);
+          
+          // Add our event listener to the new button
+          newBtn.onclick = function(event) {
+            console.log('Mobile menu button clicked directly');
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Toggle menu visibility
+            if (mobileMenu.classList.contains('hidden')) {
+              mobileMenu.classList.remove('hidden');
+              newBtn.innerHTML = '<i class="fas fa-times text-2xl"></i>';
+              console.log('Mobile menu shown');
+            } else {
+              mobileMenu.classList.add('hidden');
+              newBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+              console.log('Mobile menu hidden');
+            }
+            
+            return false; // Prevent default
+          };
+          
+          // Add close functionality to menu links
+          const mobileLinks = mobileMenu.querySelectorAll('a');
+          mobileLinks.forEach(link => {
+            link.addEventListener('click', function() {
+              mobileMenu.classList.add('hidden');
+              newBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+            });
           });
-        });
-        
-        // Close menu when clicking outside
-        document.addEventListener('click', function(event) {
-          // Don't close if clicking on the menu or button
-          if (mobileMenu.contains(event.target) || mobileMenuBtn.contains(event.target)) {
-            return;
-          }
           
-          // Only close if menu is open
-          if (!mobileMenu.classList.contains('hidden')) {
-            mobileMenu.classList.add('hidden');
-            mobileMenuBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
-          }
-        });
+          // Close menu when clicking outside
+          document.addEventListener('click', function(event) {
+            if (!mobileMenu.contains(event.target) && !newBtn.contains(event.target)) {
+              mobileMenu.classList.add('hidden');
+              newBtn.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+            }
+          });
+          
+          console.log('Mobile menu setup complete');
+          return true;
+        } else {
+          console.error('Mobile menu elements not found!');
+          return false;
+        }
       }
-    });
+      
+      // Try to set up the mobile menu immediately
+      const success = setupMobileMenu();
+      
+      // If it didn't work, try again after a short delay
+      if (!success) {
+        console.log('Trying again in 500ms...');
+        setTimeout(setupMobileMenu, 500);
+        
+        // And once more after a longer delay
+        setTimeout(setupMobileMenu, 1500);
+      }
+    })();
     
     // Initialize page with auth check
     document.addEventListener('DOMContentLoaded', function() {

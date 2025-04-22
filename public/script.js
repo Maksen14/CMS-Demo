@@ -538,6 +538,12 @@ function setupImageEditing() {
 
 // Mobile navigation
 function setupMobileNav() {
+  // Skip if we're on the menu page (handled directly in menu.html)
+  if (window.location.pathname.includes('menu.html')) {
+    console.log('Menu page detected, skipping mobile nav setup in script.js');
+    return;
+  }
+
   const mobileMenuButton = document.getElementById('mobile-menu-button');
   const mobileMenu = document.getElementById('mobile-menu');
   
